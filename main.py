@@ -7,8 +7,6 @@ from db.Database import Database
 intents = nextcord.Intents.all()
 intents.message_content = True
 
-
-
 client = nextcord.Client(intents=intents)
 
 client.add_cog(GeneralCommands(client))
