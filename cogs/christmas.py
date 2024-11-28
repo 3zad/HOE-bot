@@ -56,6 +56,7 @@ class ChristmasCommands(commands.Cog):
         else:
             await self.db.add_candy(ctx.user.id, candy)
             await ctx.response.send_message(f"You mined for gems and earned {candy} candy!")
+        await self.db.add_candy_bank(-1*candy)
     
     
     @nextcord.slash_command(name="steal", description="Try stealing from a member.")
@@ -122,26 +123,29 @@ class ChristmasCommands(commands.Cog):
         candy = random.randint(500, 1500)
         await self.db.add_candy(ctx.user.id, candy)
         await ctx.response.send_message(f"You've earned {candy} candy!")
+        await self.db.add_candy_bank(-1*candy)
         
     @nextcord.slash_command(name="coinflip", description="50/50 chance of doubling your money or losing it.")
-    async def coinflip(self, ctx):
-        info = await self.db.get_user_data(ctx.user.id)
+    async def coinflip(self, ctx, amount):
+        funds = await self.sufficient_funds(ctx.user.id, amount)
 
-        if info[6] is not None:
-            last_daily = datetime.fromisoformat(info[6])
-            time_since_last = datetime.now() - last_daily
+        user_won = random.choice([True,False])
+        print(user_won)
 
-            if time_since_last < timedelta(hours=20):  # Check if less than 20 hours
-                hours_remaining = 20 - time_since_last.total_seconds() // 3600
-                await ctx.response.send_message(f"You can claim your daily reward in {int(hours_remaining)} hours!")
-                return
-        await self.db.update_last_daily_time(ctx.user.id)
-        candy = random.randint(500, 1500)
-        await self.db.add_candy(ctx.user.id, candy)
-        await ctx.response.send_message(f"You've earned {candy} candy!")
+        if funds:
+            if user_won:
+                await self.db.add_candy(ctx.user.id, amount)
+                await self.db.add_candy_bank(-1*amount)
+                await ctx.response.send_message(f"You won {amount} candy!")
+            else:
+                await self.db.add_candy(ctx.user.id, -1*amount)
+                await self.db.add_candy_bank(amount)
+                await ctx.response.send_message(f"You lost {amount} candy!")
+        else:
+            await ctx.response.send_message("Insufficient funds.")
 
     async def sufficient_funds(self, member, amount):
         data = await self.db.get_user_data(member)
-        if data[1] > amount:
+        if int(data[1]) > int(amount):
             return True
         return False
