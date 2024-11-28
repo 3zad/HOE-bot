@@ -2,6 +2,7 @@ import nextcord
 from nextcord.ext import commands
 import random
 from db.Database import Database
+from datetime import datetime, timedelta
 
 class ChristmasCommands(commands.Cog):
     def __init__(self, bot):
@@ -81,6 +82,23 @@ class ChristmasCommands(commands.Cog):
         cont = await self.db.get_lottery_contributors()
         await ctx.response.send_message(pot)
 
+    @nextcord.slash_command(name="daily", description="Claim your daily reward!")
+    async def daily(self, ctx):
+        info = await self.db.get_user_data(ctx.user.id)
+
+        if info[6] is not None:
+            print(info)
+            last_daily = datetime.fromisoformat(info[6])
+            time_since_last = datetime.now() - last_daily
+
+            if time_since_last < timedelta(hours=20):  # Check if less than 20 hours
+                hours_remaining = 20 - time_since_last.total_seconds() // 3600
+                await ctx.response.send_message(f"You can claim your daily reward in {int(hours_remaining)} hours!")
+                return
+        await self.db.update_last_daily_time(ctx.user.id)
+        candy = random.randint(500, 1500)
+        await self.db.add_candy(ctx.user.id, candy)
+        await ctx.response.send_message(f"You've earned {candy} candy!")
 
     async def sufficient_funds(self, member, amount):
         data = await self.db.get_user_data(member)

@@ -24,7 +24,8 @@ class Database:
                 last_work_time TEXT DEFAULT NULL,
                 stealing_attempts INTEGER DEFAULT 0,
                 last_shield_time TEXT DEFAULT NULL,
-                work_multiplier REAL DEFAULT 1.0
+                work_multiplier REAL DEFAULT 1.0,
+                last_daily_time TEXT DEFAULT NULL
             )
             ''')
 
@@ -47,6 +48,26 @@ class Database:
             row = await cursor.fetchone()
             if row[0] == 0:
                 await db.execute("INSERT INTO lottery (candy_pot) VALUES (0)")
+
+            # Fix later
+
+            # await db.execute('''
+            # CREATE TABLE IF NOT EXISTS bets (
+            #     id INTEGER PRIMARY KEY AUTOINCREMENT,
+            #     topic TEXT DEFAULT NULL,
+            #     bet_pot_one INTEGER DEFAULT 0,
+            #     bet_pot_two INTEGER DEFAULT 0
+            # )
+            # ''')
+            # await db.execute('''
+            # CREATE TABLE IF NOT EXISTS bet_contributors (
+            #     member_id INTEGER NOT NULL,
+            #     bet_id INTEGER NOT NULL,
+            #     tickets INTEGER DEFAULT 0,
+            #     FOREIGN KEY (bet_id) REFERENCES bets (id),
+            #     UNIQUE (member_id, bet_id)
+            # )
+            # ''')
 
             await db.commit()
 
@@ -79,6 +100,16 @@ class Database:
             await db.execute('''
             UPDATE user_data
             SET last_work_time = ?
+            WHERE member_id = ?
+            ''', (datetime.now().isoformat(), member_id))
+            await db.commit()
+
+    async def update_last_daily_time(self, member_id):
+        """Update the last daily time for a user if it's been 20 hours or more."""
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+            UPDATE user_data
+            SET last_daily_time = ?
             WHERE member_id = ?
             ''', (datetime.now().isoformat(), member_id))
             await db.commit()
