@@ -15,6 +15,13 @@ class ChristmasCommands(commands.Cog):
         print("HERE"*1000)
         await self.db.initialize()
 
+    @nextcord.slash_command(name="bank_balance", description="See how much money the bank has.")
+    async def bank_balance(self, ctx):
+        info = await self.db.get_bank_data()
+        print(info)
+        await ctx.response.send_message(info[1])
+
+
     @nextcord.slash_command(name="balance", description="Check your balance.")
     async def balance(self, ctx, member):
         user_data = await self.db.get_user_data(member[2:-1])
@@ -28,11 +35,28 @@ class ChristmasCommands(commands.Cog):
 
     @nextcord.slash_command(name="work", description="Do some work and get some candy")
     async def work(self, ctx):
-        amount = random.randint(1,25)
-        await self.db.add_or_update_user(ctx.user.id, candy=amount)
+        info = await self.db.get_user_data(ctx.user.id)
+
+        rare_gem = random.randint(0, 100) == 99
+
+        if info != None and info[2] is not None:
+            last_work = datetime.fromisoformat(info[2])
+            time_since_last = datetime.now() - last_work
+
+            if time_since_last < timedelta(minutes=5):  # Check if less than 20 hours
+                minutes_remaining = 5 - time_since_last.total_seconds() // 60
+                await ctx.response.send_message(f"You can work again in {int(minutes_remaining)} minutes!")
+                return
         await self.db.update_last_work_time(ctx.user.id)
-        await ctx.send(f"You worked and earned {amount} candy!")
-        await ctx.response.send_message(f"You have earned {amount} pieces of candy!")
+        candy = random.randint(1,25)
+        if rare_gem:
+            candy = (candy + 20) * 20
+            await self.db.add_candy(ctx.user.id, candy)
+            await ctx.response.send_message(f"You found a rare gem and earned {candy} candy!")
+        else:
+            await self.db.add_candy(ctx.user.id, candy)
+            await ctx.response.send_message(f"You mined for gems and earned {candy} candy!")
+    
     
     @nextcord.slash_command(name="steal", description="Try stealing from a member.")
     async def steal(self, ctx, member):
@@ -87,7 +111,23 @@ class ChristmasCommands(commands.Cog):
         info = await self.db.get_user_data(ctx.user.id)
 
         if info[6] is not None:
-            print(info)
+            last_daily = datetime.fromisoformat(info[6])
+            time_since_last = datetime.now() - last_daily
+
+            if time_since_last < timedelta(hours=20):  # Check if less than 20 hours
+                hours_remaining = 20 - time_since_last.total_seconds() // 3600
+                await ctx.response.send_message(f"You can claim your daily reward in {int(hours_remaining)} hours!")
+                return
+        await self.db.update_last_daily_time(ctx.user.id)
+        candy = random.randint(500, 1500)
+        await self.db.add_candy(ctx.user.id, candy)
+        await ctx.response.send_message(f"You've earned {candy} candy!")
+        
+    @nextcord.slash_command(name="coinflip", description="50/50 chance of doubling your money or losing it.")
+    async def coinflip(self, ctx):
+        info = await self.db.get_user_data(ctx.user.id)
+
+        if info[6] is not None:
             last_daily = datetime.fromisoformat(info[6])
             time_since_last = datetime.now() - last_daily
 

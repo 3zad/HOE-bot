@@ -30,6 +30,13 @@ class Database:
             ''')
 
             await db.execute('''
+            CREATE TABLE IF NOT EXISTS bank (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                candy INTEGER DEFAULT 50000000
+            )
+            ''')
+
+            await db.execute('''
             CREATE TABLE IF NOT EXISTS lottery (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 candy_pot INTEGER DEFAULT 0
@@ -48,28 +55,34 @@ class Database:
             row = await cursor.fetchone()
             if row[0] == 0:
                 await db.execute("INSERT INTO lottery (candy_pot) VALUES (0)")
-
-            # Fix later
-
-            # await db.execute('''
-            # CREATE TABLE IF NOT EXISTS bets (
-            #     id INTEGER PRIMARY KEY AUTOINCREMENT,
-            #     topic TEXT DEFAULT NULL,
-            #     bet_pot_one INTEGER DEFAULT 0,
-            #     bet_pot_two INTEGER DEFAULT 0
-            # )
-            # ''')
-            # await db.execute('''
-            # CREATE TABLE IF NOT EXISTS bet_contributors (
-            #     member_id INTEGER NOT NULL,
-            #     bet_id INTEGER NOT NULL,
-            #     tickets INTEGER DEFAULT 0,
-            #     FOREIGN KEY (bet_id) REFERENCES bets (id),
-            #     UNIQUE (member_id, bet_id)
-            # )
-            # ''')
+        
+            # Initialize the centeral bank account if it is empty.
+            cursor = await db.execute('SELECT COUNT(*) FROM bank')
+            row = await cursor.fetchone()
+            if row[0] == 0:
+                await db.execute("INSERT INTO bank (candy) VALUES (50000000)")    
 
             await db.commit()
+
+    # Bank functions
+    async def get_bank_data(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM bank')
+            row = await cursor.fetchone()
+            return row
+
+    async def add_candy_bank(self, amount):
+        """Add or remove candy from the bank."""
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+            INSERT INTO bank (id, candy)
+            VALUES (?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                candy = candy + excluded.candy
+            ''', (1, amount))
+            await db.commit()
+
+    # User functions
 
     async def add_or_update_user(self, member_id, candy=0, multiplier=1.0):
         """Add a new user or update an existing user's candy and multiplier."""
@@ -178,6 +191,9 @@ class Database:
             return await cursor.fetchall()
 
     async def draw_lottery(self):
+        """
+        25% tax goes to the centeral bank.
+        """
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT member_id, tickets FROM lottery_contributors')
             contributions = await cursor.fetchall()
@@ -193,13 +209,21 @@ class Database:
 
             cursor = await db.execute('SELECT candy_pot FROM lottery')
             pot = (await cursor.fetchone())[0]
+            
+            winnings, tax = int(pot*0.75), int(pot*0.25)
 
             await db.execute('''
             UPDATE user_data SET candy = candy + ? WHERE member_id = ?
-            ''', (pot, winner_id))
+            ''', (winnings, winner_id))
             await db.execute('DELETE FROM lottery_contributors')
             await db.execute('UPDATE lottery SET candy_pot = 0')
+            await db.execute('''
+            INSERT INTO bank (id, candy)
+            VALUES (?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                candy = candy + excluded.candy
+            ''', (1, tax))
 
             await db.commit()
 
-            return winner_id, pot
+            return winner_id, winnings

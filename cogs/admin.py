@@ -22,8 +22,8 @@ class AdminCommands(commands.Cog):
     @commands.has_permissions(administrator = True)
     @nextcord.slash_command(name="draw_lottery", description="Draw the lottery.")
     async def draw_lottery(self, ctx):
-        winner_id, pot = await self.db.draw_lottery()
-        await ctx.send(f"<@{winner_id}> has won {pot} candy!")
+        winner_id, winnings = await self.db.draw_lottery()
+        await ctx.send(f"<@{winner_id}> has won {winnings} candy!")
 
 
     @commands.has_permissions(administrator = True)
@@ -31,3 +31,9 @@ class AdminCommands(commands.Cog):
     async def candy_injection(self, ctx, amount):
         await self.db.add_candy(ctx.user.id, amount)
         await ctx.send(f"Injection {amount} candy.")
+        
+    @commands.has_permissions(administrator = True)
+    @nextcord.slash_command(name="candy_injection_bank", description="Candy injection for the bank.")
+    async def candy_injection_bank(self, ctx, amount):
+        await self.db.add_candy_bank(amount)
+        await ctx.send(f"Injection {amount} candy into the bank.")
