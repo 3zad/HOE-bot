@@ -4,36 +4,45 @@ import sys
 from db.Database import Database
 
 class AdminCommands(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, config):
         self.bot = bot
         self.db = Database()
+        
+        self.config = config
+        self.admins = config["owners"]
 
-    @commands.has_permissions(administrator = True)
-    @nextcord.slash_command(name="shutdown", description="Turn off the bot")
+
+    @nextcord.slash_command(name="hello")
     async def hello(self, ctx):
-        sys.exit(0)
+        if ctx.user.id in self.admins:
+            await ctx.send("Hello, admin.")
 
-    @commands.has_permissions(administrator = True)
+    @nextcord.slash_command(name="shutdown", description="Turn off the bot")
+    async def shutdown(self, ctx):
+        if ctx.user.id in self.admins:
+            await ctx.send("Shutting down!")
+            sys.exit(0)
+
     @nextcord.slash_command(name="manual_db_start", description="Start the database if discord is being weird.")
     async def manual_db_start(self, ctx):
-        await self.db.initialize()
-        await ctx.send("Started.")
+        if ctx.user.id in self.admins:
+            await self.db.initialize()
+            await ctx.send("Started.")
     
-    @commands.has_permissions(administrator = True)
     @nextcord.slash_command(name="draw_lottery", description="Draw the lottery.")
     async def draw_lottery(self, ctx):
-        winner_id, winnings = await self.db.draw_lottery()
-        await ctx.send(f"<@{winner_id}> has won {winnings} candy!")
+        if ctx.user.id in self.admins:
+            winner_id, winnings = await self.db.draw_lottery()
+            await ctx.send(f"<@{winner_id}> has won {winnings} candy!")
 
-
-    @commands.has_permissions(administrator = True)
     @nextcord.slash_command(name="candy_injection", description="Candy injection.")
     async def candy_injection(self, ctx, amount):
-        await self.db.add_or_update_user(ctx.user.id, candy=amount)
-        await ctx.send(f"Injection {amount} candy.")
+        if ctx.user.id in self.admins:
+            await self.db.add_or_update_user(ctx.user.id, candy=amount)
+            await ctx.send(f"Injection {amount} candy.")
         
-    @commands.has_permissions(administrator = True)
     @nextcord.slash_command(name="candy_injection_bank", description="Candy injection for the bank.")
     async def candy_injection_bank(self, ctx, amount):
-        await self.db.add_candy_bank(amount)
-        await ctx.send(f"Injection {amount} candy into the bank.")
+        if ctx.user.id in self.admins:
+            await self.db.add_candy_bank(amount)
+            await ctx.send(f"Injection {amount} candy into the bank.")

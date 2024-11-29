@@ -2,6 +2,6 @@ import nextcord
 from nextcord.ext import commands
 
 class GeneralCommands(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot, config):
         self.bot = bot
-        self._last_member = None
+        self.config = config
