@@ -29,7 +29,7 @@ class AdminCommands(commands.Cog):
     @commands.has_permissions(administrator = True)
     @nextcord.slash_command(name="candy_injection", description="Candy injection.")
     async def candy_injection(self, ctx, amount):
-        await self.db.add_candy(ctx.user.id, amount)
+        await self.db.add_or_update_user(ctx.user.id, candy=amount)
         await ctx.send(f"Injection {amount} candy.")
         
     @commands.has_permissions(administrator = True)

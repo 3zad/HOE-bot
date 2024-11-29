@@ -25,7 +25,9 @@ class Database:
                 stealing_attempts INTEGER DEFAULT 0,
                 last_shield_time TEXT DEFAULT NULL,
                 work_multiplier REAL DEFAULT 1.0,
-                last_daily_time TEXT DEFAULT NULL
+                last_daily_time TEXT DEFAULT NULL,
+                shield_hours INTEGER DEFAULT 0,
+                lifetime_stealing_attempts INTEGER DEFAULT 0
             )
             ''')
 
@@ -56,7 +58,7 @@ class Database:
             if row[0] == 0:
                 await db.execute("INSERT INTO lottery (candy_pot) VALUES (0)")
         
-            # Initialize the centeral bank account if it is empty.
+            # Initialize the central bank account if it is empty.
             cursor = await db.execute('SELECT COUNT(*) FROM bank')
             row = await cursor.fetchone()
             if row[0] == 0:
@@ -64,7 +66,8 @@ class Database:
 
             await db.commit()
 
-    # Bank functions
+    # -------------- Bank -------------- #
+
     async def get_bank_data(self):
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT * FROM bank')
@@ -82,29 +85,27 @@ class Database:
             ''', (1, amount))
             await db.commit()
 
-    # User functions
+    # -------------- User -------------- #
 
     async def add_or_update_user(self, member_id, candy=0, multiplier=1.0):
         """Add a new user or update an existing user's candy and multiplier."""
         async with aiosqlite.connect(self.db_name) as db:
-            await db.execute('''
-            INSERT INTO user_data (member_id, candy, work_multiplier)
-            VALUES (?, ?, ?)
-            ON CONFLICT(member_id) DO UPDATE SET
-                candy = candy + excluded.candy,
-                work_multiplier = excluded.work_multiplier
-            ''', (member_id, candy, multiplier))
-            await db.commit()
+            cursor = await db.execute('SELECT candy FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
 
-    async def add_candy(self, member_id, amount):
-        """Add or remove candy from a user."""
-        async with aiosqlite.connect(self.db_name) as db:
-            await db.execute('''
-            INSERT INTO user_data (member_id, candy)
-            VALUES (?, ?)
-            ON CONFLICT(member_id) DO UPDATE SET
-                candy = candy + excluded.candy
-            ''', (member_id, amount))
+            if row is None:
+                initial_candy = 1000 + candy
+                await db.execute('''
+                INSERT INTO user_data (member_id, candy, work_multiplier)
+                VALUES (?, ?, ?)
+                ''', (member_id, initial_candy, multiplier))
+            else:
+                await db.execute('''
+                UPDATE user_data
+                SET candy = candy + ?, work_multiplier = ?
+                WHERE member_id = ?
+                ''', (candy, multiplier, member_id))
+            
             await db.commit()
 
     async def update_last_work_time(self, member_id):
@@ -115,6 +116,7 @@ class Database:
             SET last_work_time = ?
             WHERE member_id = ?
             ''', (datetime.now().isoformat(), member_id))
+            
             await db.commit()
 
     async def update_last_daily_time(self, member_id):
@@ -139,19 +141,29 @@ class Database:
         async with aiosqlite.connect(self.db_name) as db:
             await db.execute('''
             UPDATE user_data
-            SET stealing_attempts = stealing_attempts + 1
+            SET stealing_attempts = stealing_attempts + 1, lifetime_stealing_attempts = lifetime_stealing_attempts + 1
             WHERE member_id = ?
             ''', (member_id,))
             await db.commit()
 
-    async def update_last_shield_time(self, member_id):
+    async def clear_stealing_attempts(self, member_id):
+        """Clear the stealing attempts for a user."""
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+            UPDATE user_data
+            SET stealing_attempts = 0
+            WHERE member_id = ?
+            ''', (member_id,))
+            await db.commit()
+
+    async def update_last_shield_time(self, member_id, hours):
         """Update the last shield time for a user."""
         async with aiosqlite.connect(self.db_name) as db:
             await db.execute('''
             UPDATE user_data
-            SET last_shield_time = ?
+            SET last_shield_time = ?, shield_hours = ?
             WHERE member_id = ?
-            ''', (datetime.now().isoformat(), member_id))
+            ''', (datetime.now().isoformat(), hours, member_id))
             await db.commit()
 
     # -------------- Lottery -------------- #
