@@ -40,9 +40,9 @@ class AdminCommands(commands.Cog):
         if ctx.user.id in self.admins:
             await self.db.add_or_update_user(ctx.user.id, candy=amount)
             await ctx.send(f"Injection {amount} candy.")
-        
-    @nextcord.slash_command(name="candy_injection_bank", description="Candy injection for the bank.")
-    async def candy_injection_bank(self, ctx, amount):
+
+    @nextcord.slash_command(name="backup", description="Backup the database")
+    async def backup(self, ctx):
         if ctx.user.id in self.admins:
-            await self.db.add_candy_bank(amount)
-            await ctx.send(f"Injection {amount} candy into the bank.")
+            channel = self.bot.get_channel(1312055600062005298)
+            await channel.send(file=nextcord.File('economy.db'))
