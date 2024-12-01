@@ -66,9 +66,9 @@ class Database:
             if row is None:
                 initial_candy = 1000 + candy
                 await db.execute('''
-                INSERT INTO user_data (member_id, candy)
-                VALUES (?, ?)
-                ''', (member_id, initial_candy))
+                INSERT INTO user_data (member_id, candy, gifts_claimed)
+                VALUES (?, ?, ?)
+                ''', (member_id, initial_candy, gifts))
             else:
                 await db.execute('''
                 UPDATE user_data
