@@ -38,7 +38,12 @@ class ChristmasCommands(commands.Cog):
     @tasks.loop(minutes=60)  # Adjust the interval as needed
     async def candy_gift_task(self):
         """Periodically send a candy gift message to a random channel."""
-        channel_id = random.choice([943064312644251711, 943064312644251711])
+        # TESTING:
+        # channel_id = random.choice([943064312644251711, 943064312644251711])
+        
+        # PRODUCTION:
+        channel_id = random.choice(self.config["approved_channels"])
+
         channel = self.bot.get_channel(channel_id)
 
         candy = random.randint(1000,5000)
