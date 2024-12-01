@@ -11,37 +11,37 @@ class AdminCommands(commands.Cog):
         self.config = config
         self.admins = config["owners"]
 
-
-    @nextcord.slash_command(name="hello")
-    async def hello(self, ctx):
-        if ctx.user.id in self.admins:
-            await ctx.send("Hello, admin.")
-
-    @nextcord.slash_command(name="shutdown", description="Turn off the bot")
+    @nextcord.slash_command(name="shutdown", description="(Admin command) Turn off the bot")
     async def shutdown(self, ctx):
         if ctx.user.id in self.admins:
             await ctx.send("Shutting down!")
             sys.exit(0)
 
-    @nextcord.slash_command(name="manual_db_start", description="Start the database if discord is being weird.")
+    @nextcord.slash_command(name="manual_db_start", description="(Admin command) Start the database if discord is being weird.")
     async def manual_db_start(self, ctx):
         if ctx.user.id in self.admins:
             await self.db.initialize()
             await ctx.send("Started.")
     
-    @nextcord.slash_command(name="draw_lottery", description="Draw the lottery.")
+    @nextcord.slash_command(name="sync_commands", description="(Admin command) Sync commands.")
+    async def sync_commands(self, ctx):
+        if ctx.user.id in self.admins:
+            await self.bot.sync_application_commands()
+            await ctx.send(f"candy!")
+
+    @nextcord.slash_command(name="draw_lottery", description="(Admin command) Draw the lottery.")
     async def draw_lottery(self, ctx):
         if ctx.user.id in self.admins:
             winner_id, winnings = await self.db.draw_lottery()
-            await ctx.send(f"<@{winner_id}> has won {winnings} candy!")
+            await ctx.send(f"🍬🍬🍬 <@{winner_id}> has won {winnings} candy! 🍬🍬🍬")
 
-    @nextcord.slash_command(name="candy_injection", description="Candy injection.")
+    @nextcord.slash_command(name="candy_injection", description="(Admin command) Candy injection.")
     async def candy_injection(self, ctx, amount):
         if ctx.user.id in self.admins:
             await self.db.add_or_update_user(ctx.user.id, candy=amount)
             await ctx.send(f"Injection {amount} candy.")
 
-    @nextcord.slash_command(name="backup", description="Backup the database")
+    @nextcord.slash_command(name="backup", description="(Admin command) Backup the database")
     async def backup(self, ctx):
         if ctx.user.id in self.admins:
             channel = self.bot.get_channel(1312055600062005298)

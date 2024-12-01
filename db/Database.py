@@ -27,7 +27,8 @@ class Database:
                 work_multiplier REAL DEFAULT 1.0,
                 last_daily_time TEXT DEFAULT NULL,
                 shield_hours INTEGER DEFAULT 0,
-                lifetime_stealing_attempts INTEGER DEFAULT 0
+                lifetime_stealing_attempts INTEGER DEFAULT 0,
+                gifts_claimed INTEGER DEFAULT 0
             )
             ''')
 
@@ -55,7 +56,7 @@ class Database:
 
     # -------------- User -------------- #
 
-    async def add_or_update_user(self, member_id, candy=0, multiplier=1.0):
+    async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0):
         """Add a new user or update an existing user's candy and multiplier."""
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT candy FROM user_data WHERE member_id = ?', (member_id,))
@@ -64,16 +65,16 @@ class Database:
             if row is None:
                 initial_candy = 1000 + candy
                 await db.execute('''
-                INSERT INTO user_data (member_id, candy, work_multiplier)
-                VALUES (?, ?, ?)
-                ''', (member_id, initial_candy, multiplier))
+                INSERT INTO user_data (member_id, candy)
+                VALUES (?, ?)
+                ''', (member_id, initial_candy))
             else:
                 await db.execute('''
                 UPDATE user_data
-                SET candy = candy + ?, work_multiplier = ?
+                SET candy = candy + ?, work_multiplier = work_multiplier + ?, gifts_claimed = gifts_claimed + ?
                 WHERE member_id = ?
-                ''', (candy, multiplier, member_id))
-            
+                ''', (candy, multiplier, gifts, member_id))
+                
             await db.commit()
 
     async def update_last_work_time(self, member_id):
@@ -105,11 +106,49 @@ class Database:
             return row
         
     async def get_user_balance(self, member_id):
-        """Retrieve data for a specific user."""
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
             row = await cursor.fetchone()
-            return int(row[1])
+            try:
+                return int(row[1])
+            except TypeError:
+                return 0
+            
+    async def get_user_stealing(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return int(row[3])
+            except TypeError:
+                return 0
+            
+    async def get_user_multiplier(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return int(row[5])
+            except TypeError:
+                return 1
+            
+    async def get_user_gifts(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return int(row[9])
+            except TypeError:
+                return 0
+            
+    async def get_user_tickets(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM lottery_contributors WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return int(row[1])
+            except TypeError:
+                return 0
 
     async def increment_stealing_attempts(self, member_id):
         """Increment the stealing attempts for a user."""
