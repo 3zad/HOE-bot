@@ -27,7 +27,7 @@ class AdminCommands(commands.Cog):
     async def sync_commands(self, ctx):
         if ctx.user.id in self.admins:
             await self.bot.sync_application_commands()
-            await ctx.send(f"candy!")
+            await ctx.send(f"Done.")
 
     @nextcord.slash_command(name="draw_lottery", description="(Admin command) Draw the lottery.")
     async def draw_lottery(self, ctx):
@@ -46,3 +46,4 @@ class AdminCommands(commands.Cog):
         if ctx.user.id in self.admins:
             channel = self.bot.get_channel(1312055600062005298)
             await channel.send(file=nextcord.File('economy.db'))
+            await ctx.send("Done.")

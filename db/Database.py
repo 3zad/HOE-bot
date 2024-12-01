@@ -28,7 +28,8 @@ class Database:
                 last_daily_time TEXT DEFAULT NULL,
                 shield_hours INTEGER DEFAULT 0,
                 lifetime_stealing_attempts INTEGER DEFAULT 0,
-                gifts_claimed INTEGER DEFAULT 0
+                gifts_claimed INTEGER DEFAULT 0,
+                stolen_from INTEGER DEFAULT 0
             )
             ''')
 
@@ -141,6 +142,24 @@ class Database:
             except TypeError:
                 return 0
             
+    async def get_user_shield_date(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return (row[4], row[7])
+            except TypeError:
+                return None
+            
+    async def get_user_stolen_from(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return int(row[10])
+            except TypeError:
+                return 0
+
     async def get_user_tickets(self, member_id):
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT * FROM lottery_contributors WHERE member_id = ?', (member_id,))
@@ -156,6 +175,15 @@ class Database:
             await db.execute('''
             UPDATE user_data
             SET stealing_attempts = stealing_attempts + 1, lifetime_stealing_attempts = lifetime_stealing_attempts + 1
+            WHERE member_id = ?
+            ''', (member_id,))
+            await db.commit()
+
+    async def increment_stolen_from(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+            UPDATE user_data
+            SET stolen_from = stolen_from + 1
             WHERE member_id = ?
             ''', (member_id,))
             await db.commit()

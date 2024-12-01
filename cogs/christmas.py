@@ -17,6 +17,7 @@ class ChristmasCommands(commands.Cog):
         stealing = await self.db.get_user_stealing(member)
         multiplier = await self.db.get_user_multiplier(member)
         gifts = await self.db.get_user_gifts(member)
+        stolen_from = await self.db.get_user_stolen_from(member)
         user = await self.bot.fetch_user(member)
 
         message = message.replace(f"<@{member}>", user.display_name)
@@ -24,7 +25,7 @@ class ChristmasCommands(commands.Cog):
             second_user = await self.bot.fetch_user(second_member)
             message = message.replace(f"<@{second_member}>", second_user.display_name)
 
-        description = f"<@{member}>'s balance: {balance} candy 🍬\nStealing attempts: {stealing}\nCandy multiplier: {multiplier}x\nNumber of gifts claimed: {gifts}"
+        description = f"<@{member}>'s balance: {balance} candy 🍬\nStealing attempts: {stealing}\nCandy multiplier: {multiplier}x\nNumber of gifts claimed: {gifts}\nThis user has been robbed {stolen_from} time(s)."
 
         embed = nextcord.Embed(colour=color, color=None, title=message, type='rich', url=None, description=description, timestamp=None)
         try:
@@ -34,7 +35,7 @@ class ChristmasCommands(commands.Cog):
             pass
         return embed
 
-    @tasks.loop(minutes=0.2)  # Adjust the interval as needed
+    @tasks.loop(minutes=60)  # Adjust the interval as needed
     async def candy_gift_task(self):
         """Periodically send a candy gift message to a random channel."""
         channel_id = random.choice([943064312644251711, 943064312644251711])
@@ -121,14 +122,14 @@ class ChristmasCommands(commands.Cog):
         message = ""
         if ctx.channel.id in self.config["work_channel"]:
             info = await self.db.get_user_data(ctx.user.id)
-            rare_gem = random.randint(0, 100) == 99
+            rare_gem = random.randint(0, 100) == 20
 
             work = True
             if info != None and info[2] is not None:
                 last_work = datetime.fromisoformat(info[2])
                 time_since_last = datetime.now() - last_work
 
-                if time_since_last < timedelta(minutes=5):  # Check if less than 20 hours
+                if time_since_last < timedelta(minutes=5):
                     minutes_remaining = 5 - time_since_last.total_seconds() // 60
                     message = f"You can work again in {int(minutes_remaining)} minute(s)!"
                     color = nextcord.colour.Colour.red()
@@ -154,28 +155,49 @@ class ChristmasCommands(commands.Cog):
     @nextcord.slash_command(name="steal", description="Try stealing from a member.")
     async def steal(self, ctx, member, amount):
         if ctx.channel.id in self.config["commands_channel"]:
+
             color = None
             message = ""
             amount = int(amount)
             
-            victim_funds = await self.sufficient_funds(member[2:-1], amount*10)
-
-            info = await self.db.get_user_data(ctx.user.id)
+            shielded = True
+            victim_shield, victim_hours = None, None
+            victim_funds = None
+            try:
+                victim_shield, victim_hours = await self.db.get_user_shield_date(member[2:-1])
+                victim_funds = await self.sufficient_funds(member[2:-1], amount*10)
+            except TypeError:
+                shielded = False
 
             robber_funds = await self.sufficient_funds(ctx.user.id, 0)
 
-            if not robber_funds:
+            
+            if shielded and victim_shield != None:
+                last_shield = datetime.fromisoformat(victim_shield)
+                time_since_last_shield = datetime.now() - last_shield
+            else:
+                shielded = False
+
+            if ctx.user.id == int(member[2:-1]):
+                message = f"You can't steal from yourself!"
+                color = nextcord.colour.Colour.red()
+            elif not robber_funds:
                 message = f"You're too poor!"
                 color = nextcord.colour.Colour.red()
+            elif shielded and time_since_last_shield < timedelta(hours=victim_hours):
+                message = f"{member} is shielded!"
+                color = nextcord.colour.Colour.red()
             elif victim_funds:
-                info = await self.db.get_user_data(ctx.user.id)
-                successful = random.random() < (1.001**(-amount) - float(info[3])/100)
+                await self.db.update_last_shield_time(member[2:-1], 0)
+                stealing_attempts = await self.db.get_user_stealing(ctx.user.id)
+                successful = random.random() < (1.001**(-amount) - float(stealing_attempts)/100)
 
                 await self.db.increment_stealing_attempts(ctx.user.id)
 
                 if successful:
                     await self.db.add_or_update_user(ctx.user.id, candy=amount)
                     await self.db.add_or_update_user(member[2:-1], candy=-amount)
+                    await self.db.increment_stolen_from(member[2:-1])
                     message = f"🍬 You have stolen {amount} pieces of candy from {member}! 🍬"
                     color = nextcord.colour.Colour.green()
                 else:
@@ -196,6 +218,7 @@ class ChristmasCommands(commands.Cog):
     async def pardon(self, ctx):
         color = None
         message = ""
+
         if ctx.channel.id in self.config["commands_channel"]:
             funds = await self.sufficient_funds(ctx.user.id, 1000)
 
@@ -211,18 +234,26 @@ class ChristmasCommands(commands.Cog):
             embed = await self.embed(message, color, ctx.user.id)
             await ctx.response.send_message(embed=embed)
 
-    @nextcord.slash_command(name="shield", description="Gives you a defense from stealing for 2 hours. It costs 50 candy per hour.")
+    @nextcord.slash_command(name="shield", description="Gives you a defense from stealing for 2 hours. It costs 150 candy per hour.")
     async def shield(self, ctx, hours):
         color = None
         message = ""
         if ctx.channel.id in self.config["commands_channel"]:
             hours = int(hours)
             if hours >= 1:
-                funds = await self.sufficient_funds(ctx.user.id, hours*50)
+                funds = await self.sufficient_funds(ctx.user.id, hours*150)
                 
                 if funds:
+                    shield, hours_db = await self.db.get_user_shield_date(ctx.user.id)
+                    if shield != None and int(hours_db) > 0:
+                        last_shield = datetime.fromisoformat(shield)
+                        time_since_last_shield = datetime.now() - last_shield
+
+                        if time_since_last_shield < timedelta(hours=hours_db):
+                            hours = hours + int(hours_db) - round(time_since_last_shield.total_seconds()/3600, 0)
+
                     await self.db.update_last_shield_time(ctx.user.id, hours)
-                    await self.db.add_or_update_user(ctx.user.id, candy=hours*50*-1)
+                    await self.db.add_or_update_user(ctx.user.id, candy=hours*150*-1)
                     message = f"You have been shielded against robbers for {hours} hour(s)!"
                     color = nextcord.colour.Colour.green()
                 else:
