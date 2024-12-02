@@ -29,7 +29,9 @@ class Database:
                 shield_hours INTEGER DEFAULT 0,
                 lifetime_stealing_attempts INTEGER DEFAULT 0,
                 gifts_claimed INTEGER DEFAULT 0,
-                stolen_from INTEGER DEFAULT 0
+                stolen_from INTEGER DEFAULT 0,
+                work_count INTEGER DEFAULT 0,
+                gambling_count INTEGER DEFAULT 0
             )
             ''')
 
@@ -57,7 +59,7 @@ class Database:
 
     # -------------- User -------------- #
 
-    async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0):
+    async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0, work_count=0, gambling_count=0):
         """Add a new user or update an existing user's candy and multiplier."""
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT candy FROM user_data WHERE member_id = ?', (member_id,))
@@ -66,15 +68,15 @@ class Database:
             if row is None:
                 initial_candy = 1000 + candy
                 await db.execute('''
-                INSERT INTO user_data (member_id, candy, gifts_claimed)
-                VALUES (?, ?, ?)
-                ''', (member_id, initial_candy, gifts))
+                INSERT INTO user_data (member_id, candy, gifts_claimed, work_count, gambling_count)
+                VALUES (?, ?, ?, ?, ?)
+                ''', (member_id, initial_candy, gifts, work_count, gambling_count))
             else:
                 await db.execute('''
                 UPDATE user_data
-                SET candy = candy + ?, work_multiplier = work_multiplier + ?, gifts_claimed = gifts_claimed + ?
+                SET candy = candy + ?, work_multiplier = work_multiplier + ?, gifts_claimed = gifts_claimed + ?, work_count = work_count + ?, gambling_count = gambling_count + ?
                 WHERE member_id = ?
-                ''', (candy, multiplier, gifts, member_id))
+                ''', (candy, multiplier, gifts, work_count, gambling_count, member_id))
                 
             await db.commit()
 

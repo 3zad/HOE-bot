@@ -10,6 +10,16 @@ class ChristmasCommands(commands.Cog):
         self.bot = bot
         self.db = Database()
         self.config = config
+
+        if config["mode"] == "production":
+            self.work_channels = self.config["work_channel"]
+            self.commands_channels =self.config["commands_channel"]
+            self.approved_channels = self.config["approved_channels"]
+        else:
+            self.work_channels = self.config["work_channel_testing"]
+            self.commands_channels =self.config["commands_channel_testing"]
+            self.approved_channels = self.config["approved_channels_testing"]
+
         self.candy_gift_task.start()
 
     async def embed(self, message, color, member, second_member=None):
@@ -38,11 +48,8 @@ class ChristmasCommands(commands.Cog):
     @tasks.loop(minutes=60)  # Adjust the interval as needed
     async def candy_gift_task(self):
         """Periodically send a candy gift message to a random channel."""
-        # TESTING:
-        # channel_id = random.choice([943064312644251711, 943064312644251711])
-        
-        # PRODUCTION:
-        channel_id = random.choice(self.config["approved_channels"])
+
+        channel_id = random.choice(self.approved_channels)
 
         channel = self.bot.get_channel(channel_id)
 
@@ -77,7 +84,7 @@ class ChristmasCommands(commands.Cog):
     async def upgrade(self, ctx):
         color = None
         message = ""
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             multiplier = await self.db.get_user_multiplier(ctx.user.id)
             damage = 1000+int(multiplier)*2000
             funds = await self.sufficient_funds(ctx.user.id, damage)
@@ -99,7 +106,7 @@ class ChristmasCommands(commands.Cog):
     async def balance(self, ctx, member):
         color = None
         message = ""
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             user_data = await self.db.get_user_data(member[2:-1])
             member_id = int(member[2:-1])
             if user_data:
@@ -125,7 +132,7 @@ class ChristmasCommands(commands.Cog):
     async def work(self, ctx):
         color = None
         message = ""
-        if ctx.channel.id in self.config["work_channel"]:
+        if ctx.channel.id in self.work_channels:
             info = await self.db.get_user_data(ctx.user.id)
             rare_gem = random.randint(0, 100) == 20
 
@@ -145,11 +152,11 @@ class ChristmasCommands(commands.Cog):
                 candy = random.randint(50,100) * int(multiplier)
                 if rare_gem:
                     candy = (candy + 20) * 20
-                    await self.db.add_or_update_user(ctx.user.id, candy=candy)
+                    await self.db.add_or_update_user(ctx.user.id, candy=candy, work_count=1)
                     message = f"🍬 You found a rare gem and earned {candy} candy! 🍬"
                     color = nextcord.colour.Colour.green()
                 else:
-                    await self.db.add_or_update_user(ctx.user.id, candy=candy)
+                    await self.db.add_or_update_user(ctx.user.id, candy=candy, work_count=1)
                     message = f"🍬 You mined for gems and earned {candy} candy! 🍬"
                     color = nextcord.colour.Colour.green()
 
@@ -159,7 +166,7 @@ class ChristmasCommands(commands.Cog):
     
     @nextcord.slash_command(name="steal", description="Try stealing from a member.")
     async def steal(self, ctx, member, amount):
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
 
             color = None
             message = ""
@@ -224,7 +231,7 @@ class ChristmasCommands(commands.Cog):
         color = None
         message = ""
 
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             funds = await self.sufficient_funds(ctx.user.id, 1000)
 
             if funds:
@@ -243,7 +250,7 @@ class ChristmasCommands(commands.Cog):
     async def shield(self, ctx, hours):
         color = None
         message = ""
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             hours = int(hours)
             if hours >= 1:
                 funds = await self.sufficient_funds(ctx.user.id, hours*150)
@@ -277,7 +284,7 @@ class ChristmasCommands(commands.Cog):
         color = None
         message = ""
 
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             amount = int(amount)
             funds = await self.sufficient_funds(ctx.user.id, amount)
             if amount < 1:
@@ -299,7 +306,7 @@ class ChristmasCommands(commands.Cog):
     async def ticket(self, ctx, tickets):
         color = None
         message = ""
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             tickets = int(tickets)
             if tickets < 1:
                 message = f"Please buy 1 or more tickets!"
@@ -319,7 +326,7 @@ class ChristmasCommands(commands.Cog):
 
     @nextcord.slash_command(name="pot", description="Show how much money is in the lottery pot.")
     async def pot(self, ctx):
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             pot = await self.db.get_lottery_pot()
             tickets = await self.db.get_user_tickets(ctx.user.id)
             embed = nextcord.Embed(colour=nextcord.colour.Colour.blue(), color=None, title=f"Money in the lottery pot: {str(pot)}", type='rich', url=None, description=f"You have {tickets} tickets.", timestamp=None)
@@ -329,7 +336,7 @@ class ChristmasCommands(commands.Cog):
     async def daily(self, ctx):
         color = None
         message = ""
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             info = await self.db.get_user_data(ctx.user.id)
             daily = True
             if info[6] is not None:
@@ -358,7 +365,7 @@ class ChristmasCommands(commands.Cog):
     async def coinflip(self, ctx, amount):
         color = None
         message = ""
-        if ctx.channel.id in self.config["commands_channel"]:
+        if ctx.channel.id in self.commands_channels:
             amount = int(amount)
             funds = await self.sufficient_funds(ctx.user.id, amount)
 
@@ -366,11 +373,11 @@ class ChristmasCommands(commands.Cog):
 
             if funds:
                 if user_won:
-                    await self.db.add_or_update_user(ctx.user.id, candy=amount)
+                    await self.db.add_or_update_user(ctx.user.id, candy=amount, gambling_count=1)
                     message = f"You won {amount} candy!"
                     color = nextcord.colour.Colour.green()
                 else:
-                    await self.db.add_or_update_user(ctx.user.id, candy=amount*-1)
+                    await self.db.add_or_update_user(ctx.user.id, candy=amount*-1, gambling_count=1)
                     message = f"You lost {amount} candy!"
                     color = nextcord.colour.Colour.red()
             else:
