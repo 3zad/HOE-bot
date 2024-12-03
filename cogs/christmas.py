@@ -21,6 +21,7 @@ class ChristmasCommands(commands.Cog):
             self.approved_channels = self.config["approved_channels_testing"]
 
         self.candy_gift_task.start()
+        self.worker_task.start()
 
     async def embed(self, message, color, member, second_member=None):
         balance = await self.db.get_user_balance(member)
@@ -28,6 +29,7 @@ class ChristmasCommands(commands.Cog):
         multiplier = await self.db.get_user_multiplier(member)
         gifts = await self.db.get_user_gifts(member)
         stolen_from = await self.db.get_user_stolen_from(member)
+        workers = await self.db.get_user_workers(member)
         user = await self.bot.fetch_user(member)
 
         message = message.replace(f"<@{member}>", user.display_name)
@@ -35,7 +37,7 @@ class ChristmasCommands(commands.Cog):
             second_user = await self.bot.fetch_user(second_member)
             message = message.replace(f"<@{second_member}>", second_user.display_name)
 
-        description = f"<@{member}>'s balance: {balance} candy 🍬\nStealing attempts: {stealing}\nCandy multiplier: {multiplier}x\nNumber of gifts claimed: {gifts}\nThis user has been robbed {stolen_from} time(s)."
+        description = f"<@{member}>'s balance: {balance} candy 🍬\nStealing attempts: {stealing}\nCandy multiplier: {multiplier}x\nNumber of gifts claimed: {gifts}\nThis user has been robbed {stolen_from} time(s).\nThis user has {workers} worker(s)."
 
         embed = nextcord.Embed(colour=color, color=None, title=message, type='rich', url=None, description=description, timestamp=None)
         try:
@@ -74,8 +76,25 @@ class ChristmasCommands(commands.Cog):
             except asyncio.TimeoutError:
                 await channel.send("😔 Nobody claimed the candy gift in time!")
 
+    @tasks.loop(minutes=60)
+    async def worker_task(self):
+        users = await self.db.get_users_with_workers()
+        if users == []:
+            return
+        for user in users:
+            member_id = int(user[0])
+            worker_count = int(user[1])
+            multiplier = await self.db.get_user_multiplier(member_id)
+            await self.db.add_or_update_user(member_id, candy=worker_count*100*multiplier)
+            
+
     @candy_gift_task.before_loop
     async def before_candy_gift_task(self):
+        await self.bot.wait_until_ready()
+        await self.db.initialize()
+
+    @worker_task.before_loop
+    async def before_worker_task(self):
         await self.bot.wait_until_ready()
         await self.db.initialize()
 
@@ -172,55 +191,59 @@ class ChristmasCommands(commands.Cog):
             message = ""
             amount = int(amount)
             
-            shielded = True
-            victim_shield, victim_hours = None, None
-            victim_funds = None
-            try:
-                victim_shield, victim_hours = await self.db.get_user_shield_date(member[2:-1])
-                victim_funds = await self.sufficient_funds(member[2:-1], amount*10)
-            except TypeError:
-                shielded = False
-
-            robber_funds = await self.sufficient_funds(ctx.user.id, 0)
-
-            
-            if shielded and victim_shield != None:
-                last_shield = datetime.fromisoformat(victim_shield)
-                time_since_last_shield = datetime.now() - last_shield
+            if amount < 1:
+                message = f"Please enter a whole number greater than or equal to 1!"
+                color = nextcord.colour.Colour.red()
             else:
-                shielded = False
+                shielded = True
+                victim_shield, victim_hours = None, None
+                victim_funds = None
+                try:
+                    victim_shield, victim_hours = await self.db.get_user_shield_date(member[2:-1])
+                    victim_funds = await self.sufficient_funds(member[2:-1], amount*10)
+                except TypeError:
+                    shielded = False
 
-            if ctx.user.id == int(member[2:-1]):
-                message = f"You can't steal from yourself!"
-                color = nextcord.colour.Colour.red()
-            elif not robber_funds:
-                message = f"You're too poor!"
-                color = nextcord.colour.Colour.red()
-            elif shielded and time_since_last_shield < timedelta(hours=victim_hours):
-                message = f"{member} is shielded!"
-                color = nextcord.colour.Colour.red()
-            elif victim_funds:
-                await self.db.update_last_shield_time(member[2:-1], 0)
-                stealing_attempts = await self.db.get_user_stealing(ctx.user.id)
-                successful = random.random() < (1.001**(-amount) - float(stealing_attempts)/100)
+                robber_funds = await self.sufficient_funds(ctx.user.id, 0)
 
-                await self.db.increment_stealing_attempts(ctx.user.id)
-
-                if successful:
-                    await self.db.add_or_update_user(ctx.user.id, candy=amount)
-                    await self.db.add_or_update_user(member[2:-1], candy=-amount)
-                    await self.db.increment_stolen_from(member[2:-1])
-                    message = f"🍬 You have stolen {amount} pieces of candy from {member}! 🍬"
-                    color = nextcord.colour.Colour.green()
+                
+                if shielded and victim_shield != None:
+                    last_shield = datetime.fromisoformat(victim_shield)
+                    time_since_last_shield = datetime.now() - last_shield
                 else:
-                    await self.db.add_or_update_user(ctx.user.id, candy=-amount*2)
-                    await self.db.add_or_update_user(member[2:-1], candy=amount)
-                    message = f"You failed and had to pay a fine of {amount*2} pieces of candy to {member}!"
+                    shielded = False
+
+                if ctx.user.id == int(member[2:-1]):
+                    message = f"You can't steal from yourself!"
                     color = nextcord.colour.Colour.red()
-            
-            else:
-                message = f"{member} is too poor!"
-                color = nextcord.colour.Colour.red()
+                elif not robber_funds:
+                    message = f"You're too poor!"
+                    color = nextcord.colour.Colour.red()
+                elif shielded and time_since_last_shield < timedelta(hours=victim_hours):
+                    message = f"{member} is shielded!"
+                    color = nextcord.colour.Colour.red()
+                elif victim_funds:
+                    await self.db.update_last_shield_time(member[2:-1], 0)
+                    stealing_attempts = await self.db.get_user_stealing(ctx.user.id)
+                    successful = random.random() < (1.001**(-amount) - float(stealing_attempts)/100)
+
+                    await self.db.increment_stealing_attempts(ctx.user.id)
+
+                    if successful:
+                        await self.db.add_or_update_user(ctx.user.id, candy=amount)
+                        await self.db.add_or_update_user(member[2:-1], candy=-amount)
+                        await self.db.increment_stolen_from(member[2:-1])
+                        message = f"🍬 You have stolen {amount} pieces of candy from {member}! 🍬"
+                        color = nextcord.colour.Colour.green()
+                    else:
+                        await self.db.add_or_update_user(ctx.user.id, candy=-amount*2)
+                        await self.db.add_or_update_user(member[2:-1], candy=amount)
+                        message = f"You failed and had to pay a fine of {amount*2} pieces of candy to {member}!"
+                        color = nextcord.colour.Colour.red()
+                
+                else:
+                    message = f"{member} is too poor!"
+                    color = nextcord.colour.Colour.red()
 
             embed = await self.embed(message, color, ctx.user.id, second_member=member[2:-1])
             await ctx.response.send_message(embed=embed)
@@ -287,17 +310,19 @@ class ChristmasCommands(commands.Cog):
         if ctx.channel.id in self.commands_channels:
             amount = int(amount)
             funds = await self.sufficient_funds(ctx.user.id, amount)
+
             if amount < 1:
                 message = f"Please enter a whole number greater than or equal to 1!"
                 color = nextcord.colour.Colour.red()
-            if funds:
-                await self.db.add_or_update_user(ctx.user.id, candy=-1*amount)
-                await self.db.add_or_update_user(member[2:-1], candy=amount)
-                message = f"You have payed {amount} to {member}"
-                color = nextcord.colour.Colour.green()
-            else:    
-                message = f"Insufficient funds."
-                color = nextcord.colour.Colour.red()
+            else:
+                if funds:
+                    await self.db.add_or_update_user(ctx.user.id, candy=-1*amount)
+                    await self.db.add_or_update_user(member[2:-1], candy=amount)
+                    message = f"You have payed {amount} to {member}"
+                    color = nextcord.colour.Colour.green()
+                else:    
+                    message = f"Insufficient funds."
+                    color = nextcord.colour.Colour.red()
 
             embed = await self.embed(message, color, ctx.user.id, second_member=member[2:-1])
             await ctx.response.send_message(embed=embed)    
@@ -311,15 +336,16 @@ class ChristmasCommands(commands.Cog):
             if tickets < 1:
                 message = f"Please buy 1 or more tickets!"
                 color = nextcord.colour.Colour.red()
-            funds = await self.sufficient_funds(ctx.user.id, tickets*25)
-            if funds:
-                await self.db.add_to_lottery(ctx.user.id, tickets)
-                message = f"Successfully bought {tickets} ticket(s)!"
-                color = nextcord.colour.Colour.green()
-                
             else:
-                message = f"Insufficient funds."
-                color = nextcord.colour.Colour.red()
+                funds = await self.sufficient_funds(ctx.user.id, tickets*25)
+                if funds:
+                    await self.db.add_to_lottery(ctx.user.id, tickets)
+                    message = f"Successfully bought {tickets} ticket(s)!"
+                    color = nextcord.colour.Colour.green()
+                    
+                else:
+                    message = f"Insufficient funds."
+                    color = nextcord.colour.Colour.red()
 
             embed = await self.embed(message, color, ctx.user.id)
             await ctx.response.send_message(embed=embed)    
@@ -367,25 +393,55 @@ class ChristmasCommands(commands.Cog):
         message = ""
         if ctx.channel.id in self.commands_channels:
             amount = int(amount)
-            funds = await self.sufficient_funds(ctx.user.id, amount)
-
-            user_won = random.choice([True,False])
-
-            if funds:
-                if user_won:
-                    await self.db.add_or_update_user(ctx.user.id, candy=amount, gambling_count=1)
-                    message = f"You won {amount} candy!"
-                    color = nextcord.colour.Colour.green()
-                else:
-                    await self.db.add_or_update_user(ctx.user.id, candy=amount*-1, gambling_count=1)
-                    message = f"You lost {amount} candy!"
-                    color = nextcord.colour.Colour.red()
-            else:
-                message = "Insufficient funds."
+            if amount < 1:
+                message = f"Please enter a whole number greater than or equal to 1!"
                 color = nextcord.colour.Colour.red()
+
+            else:
+                funds = await self.sufficient_funds(ctx.user.id, amount)
+
+                user_won = random.choice([True,False])
+
+                if funds:
+                    if user_won:
+                        await self.db.add_or_update_user(ctx.user.id, candy=amount, gambling_count=1)
+                        message = f"You won {amount} candy!"
+                        color = nextcord.colour.Colour.green()
+                    else:
+                        await self.db.add_or_update_user(ctx.user.id, candy=amount*-1, gambling_count=1)
+                        message = f"You lost {amount} candy!"
+                        color = nextcord.colour.Colour.red()
+                else:
+                    message = "Insufficient funds."
+                    color = nextcord.colour.Colour.red()
 
             embed = await self.embed(message, color, ctx.user.id)
             await ctx.response.send_message(embed=embed)  
+
+
+    @nextcord.slash_command(name="buy_worker", description="Buy a worker for 1000 candy. The worker will make you 100 candy * your multiplier per hour.")
+    async def buy_worker(self, ctx, number):
+        color = None
+        message = ""
+        if ctx.channel.id in self.commands_channels:
+            number = int(number)
+            if number < 1:
+                message = "Please enter an integer equal or above 1."
+                color = nextcord.colour.Colour.red()
+            else:
+                funds = await self.sufficient_funds(ctx.user.id, number*1000)
+
+                if funds:
+                    await self.db.add_or_update_user(ctx.user.id, candy=-number*1000, worker_count=number)
+                    message = f"Successfully bought {str(number)} workers!"
+                    color = nextcord.colour.Colour.green()
+                else:
+                    message = "Insufficient funds."
+                    color = nextcord.colour.Colour.red()
+
+            embed = await self.embed(message, color, ctx.user.id)
+            await ctx.response.send_message(embed=embed)  
+
 
     async def sufficient_funds(self, member, amount):
         data = await self.db.get_user_data(member)

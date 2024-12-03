@@ -164,6 +164,8 @@ cython_debug/
 
 token.txt
 /token.txt
+token2.txt
+/token2.txt
 
 *.db
 /*.db

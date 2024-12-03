@@ -47,3 +47,11 @@ class AdminCommands(commands.Cog):
             channel = self.bot.get_channel(1312055600062005298)
             await channel.send(file=nextcord.File('economy.db'))
             await ctx.send("Done.")
+
+    @nextcord.slash_command(name="info", description="(Admin command) Database info of a user.")
+    async def info(self, ctx, member):
+        if ctx.user.id in self.admins:
+            user = await self.db.get_user_data(member[2:-1])
+            if user == None:
+                user = f"{member[2:-1]} not in DB!"
+            await ctx.send(user)

@@ -31,7 +31,8 @@ class Database:
                 gifts_claimed INTEGER DEFAULT 0,
                 stolen_from INTEGER DEFAULT 0,
                 work_count INTEGER DEFAULT 0,
-                gambling_count INTEGER DEFAULT 0
+                gambling_count INTEGER DEFAULT 0,
+                worker_count INTEGER DEFAULT 0
             )
             ''')
 
@@ -59,7 +60,7 @@ class Database:
 
     # -------------- User -------------- #
 
-    async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0, work_count=0, gambling_count=0):
+    async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0, work_count=0, gambling_count=0, worker_count=0):
         """Add a new user or update an existing user's candy and multiplier."""
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('SELECT candy FROM user_data WHERE member_id = ?', (member_id,))
@@ -68,16 +69,57 @@ class Database:
             if row is None:
                 initial_candy = 1000 + candy
                 await db.execute('''
-                INSERT INTO user_data (member_id, candy, gifts_claimed, work_count, gambling_count)
-                VALUES (?, ?, ?, ?, ?)
-                ''', (member_id, initial_candy, gifts, work_count, gambling_count))
+                INSERT INTO user_data (member_id, candy, gifts_claimed, work_count, gambling_count, worker_count)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''', (member_id, initial_candy, gifts, work_count, gambling_count, worker_count))
             else:
                 await db.execute('''
                 UPDATE user_data
-                SET candy = candy + ?, work_multiplier = work_multiplier + ?, gifts_claimed = gifts_claimed + ?, work_count = work_count + ?, gambling_count = gambling_count + ?
+                SET candy = candy + ?, work_multiplier = work_multiplier + ?, gifts_claimed = gifts_claimed + ?, work_count = work_count + ?, gambling_count = gambling_count + ?, worker_count = worker_count + ?
                 WHERE member_id = ?
-                ''', (candy, multiplier, gifts, work_count, gambling_count, member_id))
+                ''', (candy, multiplier, gifts, work_count, gambling_count, worker_count, member_id))
                 
+            await db.commit()
+
+    async def ensure_column_exists(self, db, table_name, column_name, column_definition):
+        """Ensures a column exists in the specified table. If not, adds it."""
+        cursor = await db.execute(f"PRAGMA table_info({table_name})")
+        columns = await cursor.fetchall()
+        if column_name not in [col[1] for col in columns]:  # col[1] is the column name in PRAGMA results
+            await db.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_name} {column_definition}")
+            await db.commit()
+
+    async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0, work_count=0, gambling_count=0, worker_count=0):
+        """Add a new user or update an existing user's candy and multiplier."""
+        async with aiosqlite.connect(self.db_name) as db:
+            # Ensure all required columns exist
+            await self.ensure_column_exists(db, "user_data", "gifts_claimed", "INTEGER DEFAULT 0")
+            await self.ensure_column_exists(db, "user_data", "work_count", "INTEGER DEFAULT 0")
+            await self.ensure_column_exists(db, "user_data", "gambling_count", "INTEGER DEFAULT 0")
+            await self.ensure_column_exists(db, "user_data", "worker_count", "INTEGER DEFAULT 0")
+            await self.ensure_column_exists(db, "user_data", "work_multiplier", "REAL DEFAULT 1.0")
+
+            # Check if the user already exists
+            cursor = await db.execute('SELECT candy FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+
+            if row is None:
+                # Insert a new user
+                initial_candy = 1000 + candy
+                await db.execute('''
+                INSERT INTO user_data (member_id, candy, gifts_claimed, work_count, gambling_count, worker_count)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ''', (member_id, initial_candy, gifts, work_count, gambling_count, worker_count))
+            else:
+                # Update existing user
+                await db.execute('''
+                UPDATE user_data
+                SET candy = candy + ?, work_multiplier = work_multiplier + ?, 
+                    gifts_claimed = gifts_claimed + ?, work_count = work_count + ?, 
+                    gambling_count = gambling_count + ?, worker_count = worker_count + ?
+                WHERE member_id = ?
+                ''', (candy, multiplier, gifts, work_count, gambling_count, worker_count, member_id))
+
             await db.commit()
 
     async def update_last_work_time(self, member_id):
@@ -161,6 +203,26 @@ class Database:
                 return int(row[10])
             except TypeError:
                 return 0
+            
+    async def get_user_workers(self, member_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM user_data WHERE member_id = ?', (member_id,))
+            row = await cursor.fetchone()
+            try:
+                return int(row[13])
+            except TypeError:
+                return 0
+
+    async def get_users_with_workers(self):
+        """Retrieve all users with a worker count above 0."""
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('''
+            SELECT member_id, worker_count 
+            FROM user_data 
+            WHERE worker_count > 0
+            ''')
+            users = await cursor.fetchall()
+            return users
 
     async def get_user_tickets(self, member_id):
         async with aiosqlite.connect(self.db_name) as db:

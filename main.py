@@ -4,8 +4,6 @@ from cogs.christmas import ChristmasCommands
 from cogs.admin import AdminCommands
 import json
 
-# TODO: candy bonds that will pay the centeral account and after a few days will return with interest. EMBEDS, events where people can bet on history stuff (like who will win an election or sports event) buy roles for candy, RANDOM GIFTS THAT THE BOT SENDS AND THE FIRST TO CLAIM GETS CANDY
-
 intents = nextcord.Intents.all()
 intents.message_content = True
 
