@@ -428,8 +428,12 @@ class ChristmasCommands(commands.Cog):
         message = ""
         if ctx.channel.id in self.commands_channels:
             number = int(number)
+            worker_count = await self.db.get_user_workers(ctx.user.id)
             if number < 1:
                 message = "Please enter an integer equal or above 1."
+                color = nextcord.colour.Colour.red()
+            elif int(worker_count) >= 100:
+                message = "You have reached the maximum number of workers."
                 color = nextcord.colour.Colour.red()
             else:
                 funds = await self.sufficient_funds(ctx.user.id, number*1000)
