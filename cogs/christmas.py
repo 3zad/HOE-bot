@@ -69,7 +69,7 @@ class ChristmasCommands(commands.Cog):
                 )
 
             try:
-                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0, check=check)
+                reaction, user = await self.bot.wait_for("reaction_add", timeout=60.0*60, check=check)
                 await self.db.add_or_update_user(user.id, candy=candy, gifts=1)
                 embed = await self.embed(f"🍬 {user.mention} claimed the candy! 🍬", nextcord.colour.Colour.green(), user.id)
                 await channel.send(embed=embed)
@@ -108,7 +108,10 @@ class ChristmasCommands(commands.Cog):
             damage = 1000+int(multiplier)*2000
             funds = await self.sufficient_funds(ctx.user.id, damage)
 
-            if funds:
+            if int(multiplier) >= 10:
+                message = f"You have the maximum multipler. You cannot upgrade further."
+                color = nextcord.colour.Colour.red()
+            elif funds:
                 await self.db.add_or_update_user(ctx.user.id, candy=-damage)
                 await self.db.add_or_update_user(ctx.user.id, multiplier=1.0)
                 message = f"Multiplier upgraded!"

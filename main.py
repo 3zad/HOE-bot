@@ -16,4 +16,7 @@ client.add_cog(GeneralCommands(client, config))
 client.add_cog(ChristmasCommands(client, config))
 client.add_cog(AdminCommands(client, config))
 
-client.run(open("token.txt", 'r').readline())
+if config["mode"] == "production":
+    client.run(open("token.txt", 'r').readline())
+else:
+    client.run(open("token2.txt", 'r').readline())
