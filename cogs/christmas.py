@@ -432,8 +432,8 @@ class ChristmasCommands(commands.Cog):
             if number < 1:
                 message = "Please enter an integer equal or above 1."
                 color = nextcord.colour.Colour.red()
-            elif int(worker_count) >= 100:
-                message = "You have reached the maximum number of workers."
+            elif int(worker_count + number) >= 100:
+                message = "You have reached the maximum number of workers or you are trying to buy too many workers (maximum 100 workers)!"
                 color = nextcord.colour.Colour.red()
             else:
                 funds = await self.sufficient_funds(ctx.user.id, number*1000)
