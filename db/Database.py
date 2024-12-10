@@ -58,6 +58,19 @@ class Database:
 
             await db.commit()
 
+
+    # -------------- Admin -------------- #
+
+    async def reset_balances(self):
+        """Reset every user's balance to 1000 candy times their current multiplier."""
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+                UPDATE user_data
+                SET candy = 1000 * work_multiplier
+            ''')
+            await db.commit()
+
+
     # -------------- User -------------- #
 
     async def add_or_update_user(self, member_id, candy=0, multiplier=0, gifts=0, work_count=0, gambling_count=0, worker_count=0):

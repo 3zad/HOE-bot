@@ -55,3 +55,9 @@ class AdminCommands(commands.Cog):
             if user == None:
                 user = f"{member[2:-1]} not in DB!"
             await ctx.send(user)
+
+    @nextcord.slash_command(name="reset", description="(Admin command) Resets everyone's balance to 1000 times their multiplier.")
+    async def reset(self, ctx):
+        if ctx.user.id in self.admins:
+            await self.db.reset_balances()
+            await ctx.send("Done.")
