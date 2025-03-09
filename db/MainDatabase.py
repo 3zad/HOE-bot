@@ -78,6 +78,7 @@ class MainDatabase:
 
     # -------------- User Statistics -------------- #
 
+    # --- Set --- #
     async def add_message(self, user, word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall):
         """Hello"""
         async with aiosqlite.connect(self.db_name) as db:
@@ -86,3 +87,12 @@ class MainDatabase:
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (str(user), word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall))
             await db.commit()
+
+    # --- Get --- #
+    async def get_number_of_words_and_rows(self, user):
+        """Retrieve data for a specific user."""
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT SUM(number_of_words), COUNT(*) FROM messages WHERE user_id = ?', (str(user),))
+            row = await cursor.fetchone()
+            print(row)
+            return row

@@ -54,7 +54,7 @@ class AdminCommands(commands.Cog):
     async def backup(self, ctx):
         if ctx.user.id in self.admins:
             channel = self.bot.get_channel(1312055600062005298)
-            await channel.send(file=nextcord.File('server.db'))
+            await channel.send(file=nextcord.File('main.db'))
             await ctx.send("Done.")
 
     @nextcord.slash_command(name="info", description="(Admin command) Database info of a user.")
