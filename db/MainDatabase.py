@@ -135,6 +135,20 @@ class MainDatabase:
             row = await cursor.fetchone()
             return row
         
+    async def get_reading_level_sums_of_server(self):
+        """Retrieve word data globally."""
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT AVG(reading_level), AVG(dale_chall) FROM messages')
+            row = await cursor.fetchone()
+            return row
+        
+    async def get_message_sums_of_server(self):
+        """Retrieve word data for a specific user."""
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT COUNT(*), SUM(number_of_words), SUM(number_of_curse_words), SUM(number_of_question_marks), SUM(number_of_periods), SUM(number_of_exclaimation_marks), SUM(number_of_emojis) FROM messages')
+            row = await cursor.fetchone()
+            return row
+
     async def get_language(self, user):
         """Retrieve language data for a specific user."""
         async with aiosqlite.connect(self.db_name) as db:

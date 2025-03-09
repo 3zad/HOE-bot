@@ -43,6 +43,12 @@ class GeneralCommands(commands.Cog):
         word_tuple = await self.db.get_message_sums(member[2:-1])
         await ctx.send(f"User {member} has sent {int(word_tuple[2])} curse words over {int(word_tuple[0])} messages. The average curse word count per message is {round(float(word_tuple[2])/float(word_tuple[0]), 2)} curse words.")
 
+    @nextcord.slash_command(name="server_curse_count", description="Gives information on the number of curse words for the server.")
+    async def server_curse_count(self, ctx):
+        word_tuple = await self.db.get_message_sums_of_server()
+        await ctx.send(f"{int(word_tuple[2])} curse words were sent over {int(word_tuple[0])} messages. The average curse word count per message is {round(float(word_tuple[2])/float(word_tuple[0]), 2)} curse words.")
+
+
     @nextcord.slash_command(name="language", description="Gives language information about a user.")
     async def language(self, ctx, member):
         language_row = await self.db.get_language(member[2:-1])
@@ -78,6 +84,11 @@ class GeneralCommands(commands.Cog):
     async def reading_level(self, ctx, member):
         word_tuple = await self.db.get_reading_level_sums(member[2:-1])
         await ctx.send(f"User {member} has a reading level of {word_tuple[0]} and a dale-chall readability level of {word_tuple[1]}.")
+
+    @nextcord.slash_command(name="server_reading_level", description="Gives the average reading level of the whole server.")
+    async def server_reading_level(self, ctx):
+        word_tuple = await self.db.get_reading_level_sums_of_server()
+        await ctx.send(f"The global reading level is {word_tuple[0]} and the global dale-chall readability level is {word_tuple[1]}.")
 
 
     @commands.Cog.listener()
