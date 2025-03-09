@@ -41,5 +41,5 @@
   "work_channel_testing": [943064312644251711],
   "commands_channel_testing": [943064312644251711],
 
-  "mode": "testing"
+  "mode": "production"
 }

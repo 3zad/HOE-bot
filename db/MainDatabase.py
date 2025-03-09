@@ -89,10 +89,16 @@ class MainDatabase:
             await db.commit()
 
     # --- Get --- #
-    async def get_number_of_words_and_rows(self, user):
-        """Retrieve data for a specific user."""
+    async def get_message_sums(self, user):
+        """Retrieve word data for a specific user."""
         async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT SUM(number_of_words), COUNT(*) FROM messages WHERE user_id = ?', (str(user),))
+            cursor = await db.execute('SELECT COUNT(*), SUM(number_of_words), SUM(number_of_curse_words), SUM(number_of_question_marks), SUM(number_of_periods), SUM(number_of_exclaimation_marks), SUM(number_of_emojis) FROM messages WHERE user_id = ?', (str(user),))
             row = await cursor.fetchone()
-            print(row)
+            return row
+        
+    async def get_language(self, user):
+        """Retrieve language data for a specific user."""
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT language FROM messages WHERE user_id = ?', (str(user),))
+            row = await cursor.fetchall()
             return row
