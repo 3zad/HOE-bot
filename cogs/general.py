@@ -77,7 +77,7 @@ class GeneralCommands(commands.Cog):
     @nextcord.slash_command(name="reading_level", description="Gives the average reading level of a user.")
     async def reading_level(self, ctx, member):
         word_tuple = await self.db.get_reading_level_sums(member[2:-1])
-        await ctx.send(f"User {member} has a reading level of {round(float(word_tuple[1])/float(word_tuple[0]), 2)} and a dale-chall readability level of {round(float(word_tuple[2])/float(word_tuple[0]), 2)}.")
+        await ctx.send(f"User {member} has a reading level of {word_tuple[0]} and a dale-chall readability level of {word_tuple[1]}.")
 
 
     @commands.Cog.listener()

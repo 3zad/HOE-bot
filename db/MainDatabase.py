@@ -131,7 +131,7 @@ class MainDatabase:
     async def get_reading_level_sums(self, user):
         """Retrieve word data for a specific user."""
         async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT COUNT(*), SUM(reading_level), SUM(dale_chall) FROM messages WHERE user_id = ?', (str(user),))
+            cursor = await db.execute('SELECT AVG(reading_level), AVG(dale_chall) FROM messages WHERE user_id = ?', (str(user),))
             row = await cursor.fetchone()
             return row
         
