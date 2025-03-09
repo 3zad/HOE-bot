@@ -43,13 +43,6 @@ class AdminCommands(commands.Cog):
             await self.db.add_or_update_user(ctx.user.id, candy=amount)
             await ctx.send(f"Injection {amount} candy.")
 
-    @nextcord.slash_command(name="christmas_backup", description="(Admin command) Backup the christmas database")
-    async def backup(self, ctx):
-        if ctx.user.id in self.admins:
-            channel = self.bot.get_channel(1312055600062005298)
-            await channel.send(file=nextcord.File('economy.db'))
-            await ctx.send("Done.")
-
     @nextcord.slash_command(name="backup", description="(Admin command) Backup the database")
     async def backup(self, ctx):
         if ctx.user.id in self.admins:
@@ -69,4 +62,25 @@ class AdminCommands(commands.Cog):
     async def reset(self, ctx):
         if ctx.user.id in self.admins:
             await self.db.reset_balances()
+            await ctx.send("Done.")
+
+    @nextcord.slash_command(name="drop_reactions", description="(Admin command) Drop the reactions table.")
+    async def drop_reactions(self, ctx):
+        if ctx.user.id == 740986064314826822:
+            await self.main_db.drop_reaction_table()
+            await ctx.send("Done.")
+
+    @nextcord.slash_command(name="drop_starred", description="(Admin command) Drop the starred table.")
+    async def drop_starred(self, ctx):
+        if ctx.user.id == 740986064314826822:
+            await self.main_db.drop_starred_table()
+            await ctx.send("Done.")
+
+
+    # --- Not in use --- #
+    @nextcord.slash_command(name="christmas_backup", description="(Admin command) Backup the christmas database")
+    async def backup(self, ctx):
+        if ctx.user.id in self.admins:
+            channel = self.bot.get_channel(1312055600062005298)
+            await channel.send(file=nextcord.File('economy.db'))
             await ctx.send("Done.")

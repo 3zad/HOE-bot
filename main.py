@@ -6,6 +6,8 @@ import json
 
 intents = nextcord.Intents.all()
 intents.message_content = True
+intents.reactions = True
+intents.voice_states = True
 
 client = nextcord.ext.commands.Bot(command_prefix="owurghoerubheoruihoeb", intents=intents)
 

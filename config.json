@@ -37,9 +37,11 @@
   ],
   "work_channel": [1311686767065432126],
   "commands_channel": [1311686870752559165],
+  "star_channel": 1126113267648053279,
 
   "work_channel_testing": [943064312644251711],
   "commands_channel_testing": [943064312644251711],
+  "star_channel_testing": 1126112077635911700,
 
   "mode": "production"
 }
