@@ -1,7 +1,7 @@
 import nextcord
 from nextcord.ext import commands, tasks
 import random
-from db.Database import Database
+from db.ChristmasDatabase import Database
 from datetime import datetime, timedelta
 import asyncio
 

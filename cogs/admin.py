@@ -1,12 +1,14 @@
 import nextcord
 from nextcord.ext import commands
 import sys
-from db.Database import Database
+from db.ChristmasDatabase import Database
+from db.MainDatabase import MainDatabase
 
 class AdminCommands(commands.Cog):
     def __init__(self, bot, config):
         self.bot = bot
         self.db = Database()
+        self.main_db = MainDatabase()
         
         self.config = config
         self.admins = config["owners"]
@@ -20,7 +22,7 @@ class AdminCommands(commands.Cog):
     @nextcord.slash_command(name="manual_db_start", description="(Admin command) Start the database if discord is being weird.")
     async def manual_db_start(self, ctx):
         if ctx.user.id in self.admins:
-            await self.db.initialize()
+            await self.main_db.initialize()
             await ctx.send("Started.")
     
     @nextcord.slash_command(name="sync_commands", description="(Admin command) Sync commands.")
@@ -41,11 +43,18 @@ class AdminCommands(commands.Cog):
             await self.db.add_or_update_user(ctx.user.id, candy=amount)
             await ctx.send(f"Injection {amount} candy.")
 
-    @nextcord.slash_command(name="backup", description="(Admin command) Backup the database")
+    @nextcord.slash_command(name="christmas_backup", description="(Admin command) Backup the christmas database")
     async def backup(self, ctx):
         if ctx.user.id in self.admins:
             channel = self.bot.get_channel(1312055600062005298)
             await channel.send(file=nextcord.File('economy.db'))
+            await ctx.send("Done.")
+
+    @nextcord.slash_command(name="backup", description="(Admin command) Backup the database")
+    async def backup(self, ctx):
+        if ctx.user.id in self.admins:
+            channel = self.bot.get_channel(1312055600062005298)
+            await channel.send(file=nextcord.File('server.db'))
             await ctx.send("Done.")
 
     @nextcord.slash_command(name="info", description="(Admin command) Database info of a user.")
