@@ -59,7 +59,6 @@ class AdminCommands(commands.Cog):
             else:
                 await ctx.send(message)
 
-
     # --- Not in use --- #
     @nextcord.slash_command(name="christmas_backup", description="(Admin command) Backup the christmas database")
     async def backup(self, ctx):

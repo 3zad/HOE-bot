@@ -84,7 +84,31 @@ class MainDatabase:
                 );
                 '''
             )
+            
+            await db.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS warnings (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                reason TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                );
+                '''
+            )
 
+            await db.commit()
+
+    # -------------- Moderation -------------- #
+    
+    # --- Set --- #
+    
+    async def add_warning(self, user, reason):
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+                INSERT INTO warnings (user_id, reason)
+                VALUES (?, ?)
+            ''', (str(user), reason))
             await db.commit()
 
 
