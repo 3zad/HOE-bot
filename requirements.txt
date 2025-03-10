@@ -3,3 +3,4 @@ aiosqlite
 langdetect
 nltk
 textstat
+matplotlib
