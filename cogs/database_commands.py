@@ -29,19 +29,19 @@ class DbCommands(commands.Cog):
             await channel.send(file=nextcord.File('main.db'))
             await ctx.send("Done.")
 
-    @nextcord.slash_command(name="drop_reactions", description="(Admin command) Drop the reactions table.")
+    @nextcord.slash_command(name="drop_reactions", description="(Bot dev command) Drop the reactions table.")
     async def drop_reactions(self, ctx):
         if ctx.user.id == 740986064314826822:
             await self.db.drop_reaction_table()
             await ctx.send("Done.")
 
-    @nextcord.slash_command(name="drop_starred", description="(Admin command) Drop the starred table.")
+    @nextcord.slash_command(name="drop_starred", description="(Bot dev command) Drop the starred table.")
     async def drop_starred(self, ctx):
         if ctx.user.id == 740986064314826822:
             await self.db.drop_starred_table()
             await ctx.send("Done.")
 
-    @nextcord.slash_command(name="sql", description="(Admin command) Drop the starred table.")
+    @nextcord.slash_command(name="sql", description="(Bot dev command) Drop the starred table.")
     async def sql(self, ctx, string):
         if ctx.user.id == 740986064314826822:
             message = await self.db.raw_sql(string)

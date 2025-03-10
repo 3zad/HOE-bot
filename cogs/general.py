@@ -107,7 +107,7 @@ class GeneralCommands(commands.Cog):
     async def message_times(self, ctx):
         data = await self.db.get_message_time_counts()
         hours = [int(row[0]) for row in data]
-        message_counts = [row[1] for row in data]
+        message_counts = [row[1]/row[2] for row in data]
 
         all_hours = list(range(24))
         message_counts_full = [message_counts[hours.index(h)] if h in hours else 0 for h in all_hours]
@@ -115,9 +115,9 @@ class GeneralCommands(commands.Cog):
         plt.figure(figsize=(10, 5))
         plt.bar(all_hours, message_counts_full, color='blue', alpha=0.7)
         plt.xticks(range(24))  # Show all 24 hours
-        plt.xlabel("Hour of the Day")
+        plt.xlabel("Hour of the Day (GMT)")
         plt.ylabel("Number of Messages")
-        plt.title("Messages Sent Per Hour")
+        plt.title("Average Messages Sent Per Hour")
         plt.grid(axis='y', linestyle='--', alpha=0.6)
 
         buf = io.BytesIO()

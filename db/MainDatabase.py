@@ -215,7 +215,10 @@ class MainDatabase:
     async def get_message_time_counts(self):
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute("""
-            SELECT strftime('%H', created_at) AS hour, COUNT(*) AS message_count
+            SELECT 
+                strftime('%H', created_at) AS hour, 
+                COUNT(*) AS message_count,
+                (julianday('now') - julianday(MIN(created_at))) AS days_since_earliest
             FROM messages
             WHERE created_at IS NOT NULL
             GROUP BY hour
