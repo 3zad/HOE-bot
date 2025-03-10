@@ -1,6 +1,7 @@
 import nextcord
 from nextcord.ext import commands
-import sqlite3
+import matplotlib.pyplot as plt
+import io
 from langdetect import detect
 from db.MainDatabase import MainDatabase
 from bot_utils.language import Language
@@ -90,6 +91,41 @@ class GeneralCommands(commands.Cog):
         word_tuple = await self.db.get_reading_level_sums_of_server()
         await ctx.send(f"The global reading level is {word_tuple[0]} and the global dale-chall readability level is {word_tuple[1]}.")
 
+    @nextcord.slash_command(name="top_reading_level", description="Returns the user who has the highest reading level.")
+    async def top_reading_level(self, ctx):
+        word_tuple = await self.db.get_highest_reading_level()
+        member = await self.bot.fetch_user(int(word_tuple[0]))
+        await ctx.send(f"The user with the highest reading level is {member} with a score of {word_tuple[1]}.")
+
+    @nextcord.slash_command(name="bottom_reading_level", description="Returns the user who has the lowest reading level.")
+    async def bottom_reading_level(self, ctx):
+        word_tuple = await self.db.get_lowest_reading_level()
+        member = await self.bot.fetch_user(int(word_tuple[0]))
+        await ctx.send(f"The user with the lowest reading level is {member} with a score of {word_tuple[1]}.")
+
+    @nextcord.slash_command(name="message_times", description="Outputs a graph with the number of messages during different times of the day.")
+    async def message_times(self, ctx):
+        data = await self.db.get_message_time_counts()
+        hours = [int(row[0]) for row in data]
+        message_counts = [row[1] for row in data]
+
+        all_hours = list(range(24))
+        message_counts_full = [message_counts[hours.index(h)] if h in hours else 0 for h in all_hours]
+
+        plt.figure(figsize=(10, 5))
+        plt.bar(all_hours, message_counts_full, color='blue', alpha=0.7)
+        plt.xticks(range(24))  # Show all 24 hours
+        plt.xlabel("Hour of the Day")
+        plt.ylabel("Number of Messages")
+        plt.title("Messages Sent Per Hour")
+        plt.grid(axis='y', linestyle='--', alpha=0.6)
+
+        buf = io.BytesIO()
+        plt.savefig(buf, format="png")
+        buf.seek(0)
+        plt.close()
+
+        await ctx.send(file=nextcord.File(buf, "messages_per_hour.png"))
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: nextcord.Member, before: nextcord.VoiceState, after: nextcord.VoiceState):

@@ -142,6 +142,18 @@ class MainDatabase:
             row = await cursor.fetchone()
             return row
         
+    async def get_highest_reading_level(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT user_id, AVG(reading_level) as keskmine FROM messages group by user_id order by keskmine desc')
+            row = await cursor.fetchone()
+            return row
+        
+    async def get_lowest_reading_level(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT user_id, AVG(reading_level) as keskmine FROM messages group by user_id order by keskmine asc')
+            row = await cursor.fetchone()
+            return row
+        
     async def get_message_sums_of_server(self):
         """Retrieve word data for a specific user."""
         async with aiosqlite.connect(self.db_name) as db:
@@ -176,16 +188,41 @@ class MainDatabase:
                 return False
             return True
    
+    async def get_message_time_counts(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute("""
+            SELECT strftime('%H', created_at) AS hour, COUNT(*) AS message_count
+            FROM messages
+            WHERE created_at IS NOT NULL
+            GROUP BY hour
+            ORDER BY hour;
+            """)
+            output = await cursor.fetchall()
+            return output
         
     # --- DB migration n shiet --- #
+    @DeprecationWarning
     async def drop_reaction_table(self):
         async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('DROP TABLE reactions;')
-            row = await cursor.fetchall()
-            return row
-        
+            await db.execute('DROP TABLE reactions;')
+            await db.commit()
+    
+    @DeprecationWarning
     async def drop_starred_table(self):
         async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('DROP TABLE starred;')
-            row = await cursor.fetchall()
-            return row
+            await db.execute('DROP TABLE starred;')
+            await db.commit()
+    
+    async def raw_sql(self, string):
+        async with aiosqlite.connect(self.db_name) as db:
+            if "select" in string.lower():
+                cursor = await db.execute(string)
+                row = await cursor.fetchall()
+                message = ""
+                for item in row:
+                    message += str(item) + "\n"
+                return message
+            else:
+                await db.execute(string)
+                await db.commit()
+                return None

@@ -50,6 +50,15 @@ class AdminCommands(commands.Cog):
             await self.main_db.drop_starred_table()
             await ctx.send("Done.")
 
+    @nextcord.slash_command(name="sql", description="(Admin command) Drop the starred table.")
+    async def sql(self, ctx, string):
+        if ctx.user.id == 740986064314826822:
+            message = await self.main_db.raw_sql(string)
+            if message == None: 
+                await ctx.send("Done.")
+            else:
+                await ctx.send(message)
+
 
     # --- Not in use --- #
     @nextcord.slash_command(name="christmas_backup", description="(Admin command) Backup the christmas database")
