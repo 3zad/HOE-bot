@@ -2,7 +2,7 @@ import nextcord
 from nextcord.ext import commands
 from db.MainDatabase import MainDatabase
 
-class AdminCommands(commands.Cog):
+class ModerationCommands(commands.Cog):
     def __init__(self, bot, config):
         self.bot = bot
         self.db = MainDatabase()
