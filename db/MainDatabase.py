@@ -91,8 +91,10 @@ class MainDatabase:
                 id INTEGER PRIMARY KEY,
                 user_id INTEGER,
                 reason TEXT,
+                issuer INTEGER,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                FOREIGN KEY (issuer) REFERENCES users(user_id) ON DELETE CASCADE
                 );
                 '''
             )
@@ -103,12 +105,12 @@ class MainDatabase:
     
     # --- Set --- #
     
-    async def add_warning(self, user, reason):
+    async def add_warning(self, user, reason, issuer_id):
         async with aiosqlite.connect(self.db_name) as db:
             await db.execute('''
-                INSERT INTO warnings (user_id, reason)
-                VALUES (?, ?)
-            ''', (str(user), reason))
+                INSERT INTO warnings (user_id, reason, issuer)
+                VALUES (?, ?, ?)
+            ''', (str(user), reason, str(issuer_id)))
             await db.commit()
 
 
@@ -223,6 +225,29 @@ class MainDatabase:
             WHERE created_at IS NOT NULL
             GROUP BY hour
             ORDER BY hour;
+            """)
+            output = await cursor.fetchall()
+            return output
+        
+    async def get_reading_level_and_times(self, user_id):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute("""
+            SELECT created_at, reading_level
+            FROM messages
+            WHERE user_id = ?
+            AND reading_level IS NOT NULL
+            ORDER BY created_at;
+            """, (str(user_id),))
+            output = await cursor.fetchall()
+            return output
+        
+    async def get_reading_level_and_times_of_server(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute("""
+            SELECT created_at, reading_level
+            FROM messages
+            WHERE reading_level IS NOT NULL
+            ORDER BY created_at;
             """)
             output = await cursor.fetchall()
             return output

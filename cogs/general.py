@@ -1,6 +1,10 @@
 import nextcord
 from nextcord.ext import commands
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import datetime
+import pandas as pd
+import numpy as np
 import io
 from langdetect import detect
 from db.MainDatabase import MainDatabase
@@ -126,6 +130,83 @@ class GeneralCommands(commands.Cog):
         plt.close()
 
         await ctx.send(file=nextcord.File(buf, "messages_per_hour.png"))
+
+    @nextcord.slash_command(name="reading_graph", description="Shows a user's reading level trend.")
+    async def reading_graph(self, interaction: nextcord.Interaction, user: nextcord.User):
+        
+        data = await self.db.get_reading_level_and_times(user.id)
+
+        if not data:
+            await interaction.response.send_message("No reading level data found for this user.", ephemeral=True)
+            return
+
+        df = pd.DataFrame(data, columns=["timestamp", "reading_level"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df = df.sort_values("timestamp")
+
+        df["rolling_avg"] = df["reading_level"].rolling(window=50, min_periods=1).mean()
+
+        if len(df) > 500:
+            df = df.iloc[::5]
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(df["timestamp"], df["rolling_avg"], marker='o', linestyle='-', markersize=3, alpha=0.7, color='b', label="Reading Level")
+
+        plt.xlabel("Date & Time")
+        plt.ylabel("Reading Level")
+        plt.title(f"{user.display_name}'s Reading Level Over Time")
+        plt.legend()
+        plt.grid(True)
+        plt.xticks(rotation=45)
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d\n%H:%M'))
+
+        plt.tight_layout()
+
+        image_stream = io.BytesIO()
+        plt.savefig(image_stream, format="png")
+        plt.close()
+        image_stream.seek(0)
+
+        file = nextcord.File(image_stream, filename="reading_graph.png")
+        await interaction.response.send_message(file=file)
+
+    @nextcord.slash_command(name="server_reading_graph", description="Shows the server's reading level trend.")
+    async def server_reading_graph(self, interaction: nextcord.Interaction):
+        
+        data = await self.db.get_reading_level_and_times_of_server()
+        if not data:
+            await interaction.response.send_message("No data available.", ephemeral=True)
+            return
+
+        df = pd.DataFrame(data, columns=["timestamp", "reading_level"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df = df.sort_values("timestamp")
+
+        df["rolling_avg"] = df["reading_level"].rolling(window=500, min_periods=1).mean()
+
+        if len(df) > 500:
+            df = df.iloc[::5]
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(df["timestamp"], df["rolling_avg"], marker='o', linestyle='-', markersize=3, alpha=0.7, color='b', label="Reading Level")
+
+        plt.xlabel("Date & Time")
+        plt.ylabel("Reading Level")
+        plt.title("Server's Reading Level Over Time")
+        plt.legend()
+        plt.grid(True)
+        plt.xticks(rotation=45)
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d\n%H:%M'))
+
+        plt.tight_layout()
+
+        image_stream = io.BytesIO()
+        plt.savefig(image_stream, format="png")
+        plt.close()
+        image_stream.seek(0)
+
+        file = nextcord.File(image_stream, filename="reading_graph.png")
+        await interaction.response.send_message(file=file)
 
    
     async def cog_unload(self):

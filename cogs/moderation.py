@@ -25,6 +25,6 @@ class ModerationCommands(commands.Cog):
     @nextcord.slash_command(name="warn", description="(Admin command) Warn user.")
     async def warn(self, ctx, member: nextcord.Member, *, reason="No reason provided"):
         if ctx.user.id in self.admins:
-            await self.db.add_warning(member.id, reason)
+            await self.db.add_warning(member.id, reason, ctx.user.id)
             await ctx.send(f"🚫 {member.mention} has been warned for: {reason}")
     
