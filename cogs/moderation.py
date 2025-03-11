@@ -1,6 +1,7 @@
 import nextcord
 from nextcord.ext import commands
 from db.MainDatabase import MainDatabase
+from datetime import timedelta
 
 class ModerationCommands(commands.Cog):
     def __init__(self, bot, config):
@@ -27,4 +28,24 @@ class ModerationCommands(commands.Cog):
         if ctx.user.id in self.admins:
             await self.db.add_warning(member.id, reason, ctx.user.id)
             await ctx.send(f"🚫 {member.mention} has been warned for: {reason}")
+
+    @nextcord.slash_command(name="mute", description="Mutes a user for a certain duration.")
+    async def mute(self, interaction: nextcord.Interaction, 
+                   member: nextcord.Member, 
+                   duration: int, 
+                   reason: str = "No reason provided"):
+        
+        if not interaction.user.guild_permissions.moderate_members:
+            await interaction.response.send_message("You do not have permission to mute members!", ephemeral=True)
+            return
+        
+        mute_time = timedelta(minutes=duration)
+
+        try:
+            await member.edit(timeout=nextcord.utils.utcnow() + mute_time, reason=reason)
+            await interaction.response.send_message(f"🔇 {member.mention} has been muted for {duration} minutes. Reason: {reason}")
+        except nextcord.Forbidden:
+            await interaction.response.send_message("I do not have permission to mute this user.", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"An error occurred: {e}", ephemeral=True)
     
