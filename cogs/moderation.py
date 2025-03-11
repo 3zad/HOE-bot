@@ -30,22 +30,22 @@ class ModerationCommands(commands.Cog):
             await ctx.send(f"🚫 {member.mention} has been warned for: {reason}")
 
     @nextcord.slash_command(name="mute", description="Mutes a user for a certain duration.")
-    async def mute(self, interaction: nextcord.Interaction, 
+    async def mute(self, ctx: nextcord.Interaction, 
                    member: nextcord.Member, 
                    duration: int, 
                    reason: str = "No reason provided"):
         
-        if not interaction.user.guild_permissions.moderate_members:
-            await interaction.response.send_message("You do not have permission to mute members!", ephemeral=True)
+        if not ctx.user.id in self.admins:
+            await ctx.response.send_message("You do not have permission to mute members!", ephemeral=True)
             return
         
         mute_time = timedelta(minutes=duration)
 
         try:
             await member.edit(timeout=nextcord.utils.utcnow() + mute_time, reason=reason)
-            await interaction.response.send_message(f"🔇 {member.mention} has been muted for {duration} minutes. Reason: {reason}")
+            await ctx.response.send_message(f"🔇 {member.mention} has been muted for {duration} minutes. Reason: {reason}")
         except nextcord.Forbidden:
-            await interaction.response.send_message("I do not have permission to mute this user.", ephemeral=True)
+            await ctx.response.send_message("I do not have permission to mute this user.", ephemeral=True)
         except Exception as e:
-            await interaction.response.send_message(f"An error occurred: {e}", ephemeral=True)
+            await ctx.response.send_message(f"An error occurred: {e}", ephemeral=True)
     
