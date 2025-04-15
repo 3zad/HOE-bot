@@ -99,7 +99,48 @@ class MainDatabase:
                 '''
             )
 
+            await db.execute(
+                '''
+                CREATE TABLE IF NOT EXISTS reminders (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                reminder TEXT,
+                channel_id INTEGER,
+                end_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+                );
+                '''
+            )
+
             await db.commit()
+
+    # -------------- Reminders -------------- #
+
+    # --- Set --- #
+
+    async def add_reminder(self, user, reminder, channel_id, end_time):
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+                INSERT INTO reminders (user_id, reminder, channel_id, end_at)
+                VALUES (?, ?, ?, ?)
+            ''', (int(user), reminder, int(channel_id), end_time))
+            await db.commit()
+
+    async def delete_reminder_by_start_and_end_time(self, user_id, reminder):
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute('''
+                DELETE FROM reminders WHERE user_id = ? AND reminder = ?;
+            ''', (user_id, reminder))
+            await db.commit()
+
+    # --- Get --- #
+
+    async def get_all_reminders(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT * FROM reminders')
+            rows = await cursor.fetchall()
+            return rows
 
     # -------------- Moderation -------------- #
     

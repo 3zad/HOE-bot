@@ -6,6 +6,7 @@ from cogs.admin import AdminCommands
 from cogs.moderation import ModerationCommands
 from cogs.listeners import Listeners
 from cogs.database_commands import DbCommands
+from cogs.routines import Routines
 import json
 
 intents = nextcord.Intents.all()
@@ -22,6 +23,7 @@ with open("config.json", 'r', encoding="UTF-8") as f:
 
 client.add_cog(GeneralCommands(client, config))
 client.add_cog(Listeners(client, config))
+client.add_cog(Routines(client, config))
 client.add_cog(DbCommands(client, config))
 client.add_cog(ModerationCommands(client, config))
 client.add_cog(AdminCommands(client, config))

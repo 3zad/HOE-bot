@@ -132,12 +132,12 @@ class GeneralCommands(commands.Cog):
         await ctx.send(file=nextcord.File(buf, "messages_per_hour.png"))
 
     @nextcord.slash_command(name="reading_graph", description="Shows a user's reading level trend.")
-    async def reading_graph(self, interaction: nextcord.Interaction, user: nextcord.User):
+    async def reading_graph(self, ctx: nextcord.Interaction, user: nextcord.User):
         
         data = await self.db.get_reading_level_and_times(user.id)
 
         if not data:
-            await interaction.response.send_message("No reading level data found for this user.", ephemeral=True)
+            await ctx.response.send_message("No reading level data found for this user.", ephemeral=True)
             return
 
         df = pd.DataFrame(data, columns=["timestamp", "reading_level"])
@@ -168,14 +168,14 @@ class GeneralCommands(commands.Cog):
         image_stream.seek(0)
 
         file = nextcord.File(image_stream, filename="reading_graph.png")
-        await interaction.response.send_message(file=file)
+        await ctx.response.send_message(file=file)
 
     @nextcord.slash_command(name="server_reading_graph", description="Shows the server's reading level trend.")
-    async def server_reading_graph(self, interaction: nextcord.Interaction):
+    async def server_reading_graph(self, ctx: nextcord.Interaction):
         
         data = await self.db.get_reading_level_and_times_of_server()
         if not data:
-            await interaction.response.send_message("No data available.", ephemeral=True)
+            await ctx.response.send_message("No data available.", ephemeral=True)
             return
 
         df = pd.DataFrame(data, columns=["timestamp", "reading_level"])
@@ -206,7 +206,32 @@ class GeneralCommands(commands.Cog):
         image_stream.seek(0)
 
         file = nextcord.File(image_stream, filename="reading_graph.png")
-        await interaction.response.send_message(file=file)
+        await ctx.response.send_message(file=file)
+
+    @nextcord.slash_command(name="reminder", description="DAY-MONTH-YEAR HOUR:MINUTE:SECOND gives a reminder after a period of time.")
+    async def reminder(self, ctx: nextcord.Interaction, reminder, year_month_day, hour_minute_second):
+
+        date_format = "%Y-%m-%d %H:%M:%S"
+        date_str = f"{year_month_day} {hour_minute_second}"
+        
+        try:
+            date_obj = datetime.datetime.strptime(date_str, date_format)
+            
+            if (date_obj - datetime.datetime.now()).total_seconds() < 300:
+                await ctx.response.send_message("Please set a time that is more than 5 minutes in the future.", ephemeral=True)
+                return
+        except ValueError:
+            await ctx.response.send_message("Make sure single-digit days and months are padded with 0s. For example, 2025-3-4 (4rd of March 2025) should be written as 2025-03-04.", ephemeral=True)
+            return
+
+        for char in reminder:
+            if char in ["'", '"', '`']:
+                await ctx.response.send_message(f"""For security purposes, please refrain from using these characters: ', ", and `.""", ephemeral=True)
+                return
+
+        await self.db.add_reminder(ctx.user.id, reminder, ctx.channel.id, date_obj)
+
+        await ctx.response.send_message(f"✅ Reminder set for {date_obj}.")
 
    
     async def cog_unload(self):
