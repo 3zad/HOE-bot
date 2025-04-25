@@ -1,7 +1,5 @@
 import nextcord
 from nextcord.ext import commands
-import matplotlib.pyplot as plt
-import io
 from langdetect import detect
 from db.MainDatabase import MainDatabase
 from bot_utils.language import Language
