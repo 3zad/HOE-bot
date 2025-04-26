@@ -1,7 +1,5 @@
 import nextcord
 from cogs.general import GeneralCommands
-#from cogs.christmas import ChristmasCommands
-#from cogs.christmas_admin import ChristmasAdminCommands
 from cogs.admin import AdminCommands
 from cogs.moderation import ModerationCommands
 from cogs.listeners import Listeners
@@ -28,12 +26,8 @@ client.add_cog(DbCommands(client, config))
 client.add_cog(ModerationCommands(client, config))
 client.add_cog(AdminCommands(client, config))
 
-# DO not uncomment
-#client.add_cog(ChristmasCommands(client, config))
-#client.add_cog(ChristmasAdminCommands(client, config))
-
 
 if config["mode"] == "production":
-    client.run(open("token.txt", 'r').readline())
+    client.run(open("token.txt", 'r').readline().replace("\n", ""))
 else:
-    client.run(open("token2.txt", 'r').readline())
+    client.run(open("token2.txt", 'r').readline().replace("\n", ""))
