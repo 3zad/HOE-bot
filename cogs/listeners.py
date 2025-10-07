@@ -15,6 +15,22 @@ class Listeners(commands.Cog):
         else:
             self.star_channel = self.config["star_channel_testing"]
 
+    async def star_embed(self, guild_id, channel_id, message_id, message, member):
+        user = await self.bot.fetch_user(member)
+
+        title = f"Starred message by {user}"
+
+        url = f"https://discord.com/channels/{str(guild_id)}/{str(channel_id)}/{str(message_id)}"
+        print(url)
+
+        embed = nextcord.Embed(colour=nextcord.colour.Colour.yellow(), color=None, title=title, type='rich', url=url, description=message, timestamp=None)
+        try:
+            user = await self.bot.fetch_user(member)
+            embed.set_thumbnail(url=user.avatar)
+        except:
+            pass
+        return embed
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: nextcord.Member, before: nextcord.VoiceState, after: nextcord.VoiceState):
         if before.channel is None and after.channel is not None:

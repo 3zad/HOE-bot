@@ -26,23 +26,6 @@ class GeneralCommands(commands.Cog):
         else:
             self.commands_channel: list = self.config["commands_channel_testing"]
 
-
-    async def star_embed(self, guild_id, channel_id, message_id, message, member):
-        user = await self.bot.fetch_user(member)
-
-        title = f"Starred message by {user}"
-
-        url = f"https://discord.com/channels/{str(guild_id)}/{str(channel_id)}/{str(message_id)}"
-        print(url)
-
-        embed = nextcord.Embed(colour=nextcord.colour.Colour.yellow(), color=None, title=title, type='rich', url=url, description=message, timestamp=None)
-        try:
-            user = await self.bot.fetch_user(member)
-            embed.set_thumbnail(url=user.avatar)
-        except:
-            pass
-        return embed
-
     @nextcord.slash_command(name="count", description="Various count commands.")
     async def count(self, ctx: nextcord.Interaction):
         if ctx.channel.id not in self.commands_channel:
