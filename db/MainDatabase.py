@@ -1,6 +1,4 @@
 import aiosqlite
-from datetime import datetime
-import random
 
 class MainDatabase:
     _instance = None
