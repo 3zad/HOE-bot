@@ -9,7 +9,7 @@ class Language:
         self.word_set = set(words.words())
         
         self.curse_words = []
-        with open("bot_utils/resources/curse_words.txt", 'r') as f:
+        with open("bot_utils/resources/curse_words.txt", 'r', encoding="UTF-8") as f:
             for line in f:
                 line = line.strip("\t").strip("\n")
                 self.curse_words.append(line)
