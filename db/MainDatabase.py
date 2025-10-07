@@ -39,6 +39,9 @@ class MainDatabase:
                 reading_level REAL,
                 dale_chall REAL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                channel_id INTEGER,
+                message_id INTEGER,
+                message_content TEXT,
                 FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
                 );
                 '''
@@ -156,12 +159,12 @@ class MainDatabase:
     # -------------- User Statistics -------------- #
 
     # --- Set --- #
-    async def add_message(self, user, word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall):
+    async def add_message(self, user, word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall, channel_id, message_id, message_content):
         async with aiosqlite.connect(self.db_name) as db:
             await db.execute('''
-                INSERT INTO messages (user_id, number_of_words, number_of_curse_words, number_of_question_marks, number_of_periods, number_of_exclaimation_marks, number_of_emojis, language, reading_level, dale_chall)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (str(user), word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall))
+                INSERT INTO messages (user_id, number_of_words, number_of_curse_words, number_of_question_marks, number_of_periods, number_of_exclaimation_marks, number_of_emojis, language, reading_level, dale_chall, channel_id, message_id, message_content)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (str(user), word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall, channel_id, message_id, message_content))
             await db.commit()
 
     async def set_reaction(self, message_id, user_sent, user_recieved, reaction, is_add):

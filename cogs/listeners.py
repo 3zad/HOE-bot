@@ -88,7 +88,7 @@ class Listeners(commands.Cog):
             except:
                 pass
 
-        await self.db.add_message(message.author.id, num_words, num_curse_words, num_questions, num_periods, num_exclamations, num_emojis, lang, reading_level, dale_chall)
+        await self.db.add_message(message.author.id, num_words, num_curse_words, num_questions, num_periods, num_exclamations, num_emojis, lang, reading_level, dale_chall, message.channel.id, message.id, message.content)
 
         print(f"Processed message from {message.author}: {message.content}")
 
