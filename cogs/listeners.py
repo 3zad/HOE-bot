@@ -9,6 +9,7 @@ class Listeners(commands.Cog):
         self.bot = bot
         self.db = MainDatabase()
         self.config = config
+        self.language = Language()
 
         if config["mode"] == "production":
             self.star_channel = self.config["star_channel"]
@@ -25,8 +26,8 @@ class Listeners(commands.Cog):
 
         embed = nextcord.Embed(colour=nextcord.colour.Colour.yellow(), color=None, title=title, type='rich', url=url, description=message, timestamp=None)
         try:
-            user = await self.bot.fetch_user(member)
-            embed.set_thumbnail(url=user.avatar)
+            avatar_url = user.display_avatar.url
+            embed.set_thumbnail(url=avatar_url)
         except:
             pass
         return embed
@@ -78,10 +79,8 @@ class Listeners(commands.Cog):
         num_questions = message.content.count("?")
         num_periods = message.content.count(".")
 
-        language = Language()
-
-        num_emojis = language.num_emojis(message.content)
-        num_curse_words = language.num_curses(message.content)
+        num_emojis = self.language.num_emojis(message.content)
+        num_curse_words = self.language.num_curses(message.content)
 
         if num_words == 0:
             return
@@ -97,9 +96,9 @@ class Listeners(commands.Cog):
                 pass
             
             try:
-                if not language.is_gibberish(message.content):
-                    reading_level = language.reading_level(message.content)
-                    dale_chall = language.dale_chall(message.content)
+                if not self.language.is_gibberish(message.content):
+                    reading_level = self.language.reading_level(message.content)
+                    dale_chall = self.language.dale_chall(message.content)
                     print("Not gibberish")
             except:
                 pass

@@ -250,7 +250,7 @@ class MainDatabase:
             cursor = await db.execute('''SELECT COUNT(*) FROM reactions WHERE message_id = ? AND reaction_emoji = '⭐' AND add_or_remove='remove';''', (str(message_id),))
             removed = await cursor.fetchone()
             
-            if added[0]-removed[0] >= 0:
+            if added[0]-removed[0] >= 5:
                 return True
             return False
         
