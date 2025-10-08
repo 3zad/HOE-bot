@@ -116,6 +116,13 @@ class MainDatabase:
 
             await db.commit()
 
+    # -------------- CSV -------------- #
+    async def to_CSV(self):
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT user_id, channel_id, message_content FROM messages WHERE message_content is not null')
+            row = await cursor.fetchall()
+            return row
+
     # -------------- Reminders -------------- #
 
     # --- Set --- #
