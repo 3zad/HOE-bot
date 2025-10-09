@@ -308,19 +308,7 @@ class MainDatabase:
             output = await cursor.fetchall()
             return output
         
-    # --- DB migration n shiet --- #
-    @DeprecationWarning
-    async def drop_reaction_table(self):
-        async with aiosqlite.connect(self.db_name) as db:
-            await db.execute('DROP TABLE reactions;')
-            await db.commit()
-    
-    @DeprecationWarning
-    async def drop_starred_table(self):
-        async with aiosqlite.connect(self.db_name) as db:
-            await db.execute('DROP TABLE starred;')
-            await db.commit()
-    
+    # --- DB migration n shiet --- #    
     async def raw_sql(self, string):
         async with aiosqlite.connect(self.db_name) as db:
             if "select" in string.lower():

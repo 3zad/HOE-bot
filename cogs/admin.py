@@ -39,10 +39,13 @@ class AdminCommands(commands.Cog):
             await ctx.response.send_message("Admins only", ephemeral=True)
         
         await ctx.response.defer()
-        status_message = await ctx.followup.send("Starting processing...")
+        status_message = await ctx.followup.send("Starting processing with IDs...")
 
         csv = CSVUtils()
-        await csv.process_data(min_support=min_support)
+        await csv.process_data(min_support=0.0012)
+
+        await status_message.edit(content=f"Starting processing without IDs...")
+        await csv.process_data_no_id(min_support=min_support)
 
         await status_message.edit(content=f"Complete!")
         await ctx.followup.send("Processing is complete", ephemeral=True)

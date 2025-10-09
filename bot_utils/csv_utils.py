@@ -62,6 +62,32 @@ class CSVUtils:
 
         freq_itemsets.to_csv("frequent_itemsets.csv", index=False)
 
+    async def process_data_no_id(self, min_support=0.003) -> None:
+        df = pd.read_csv("data.csv")
+
+        df['message_content'] = df['message_content'].apply(self.__preprocess_message__)
+
+        transactions = (
+            df
+            .apply(
+                lambda row: row['message_content'],
+                axis=1
+            )
+            .tolist()
+        )
+
+        transactions = [t for t in transactions if t]
+
+        te = TransactionEncoder()
+        te_ary = te.fit(transactions).transform(transactions)
+        df_ohe = pd.DataFrame(te_ary, columns=te.columns_)
+
+        freq_itemsets = fpgrowth(df_ohe, min_support=min_support, use_colnames=True)
+        freq_itemsets = freq_itemsets.sort_values(by='support', ascending=False).reset_index(drop=True)
+
+        freq_itemsets.to_csv("pure_frequent_itemsets.csv", index=False)
+
+
 
     def __preprocess_message__(self, text):
         # Remove Discord custom emojis
