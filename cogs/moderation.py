@@ -13,19 +13,19 @@ class ModerationCommands(commands.Cog):
 
     @nextcord.slash_command(name="ban", description="(Admin command) Ban user.")
     async def ban(self, ctx, member: nextcord.Member, *, reason="No reason provided"):
-        if ctx.user.id in self.admins:
+        if ctx.user.id in self.admins or ctx.user.guild_permissions.moderate_members:
             await member.ban(reason=reason)
             await ctx.send(f"🔨 {member.mention} has been banned for: {reason}")
             
     @nextcord.slash_command(name="kick", description="(Admin command) Kick user.")
     async def kick(self, ctx, member: nextcord.Member, *, reason="No reason provided"):
-        if ctx.user.id in self.admins:
+        if ctx.user.id in self.admins or ctx.user.guild_permissions.moderate_members:
             await member.kick(reason=reason)
             await ctx.send(f"🦵 {member.mention} has been kicked for: {reason}")
     
     @nextcord.slash_command(name="warn", description="(Admin command) Warn user.")
     async def warn(self, ctx, member: nextcord.Member, *, reason="No reason provided"):
-        if ctx.user.id in self.admins:
+        if ctx.user.id in self.admins or ctx.user.guild_permissions.moderate_members:
             await self.db.add_warning(member.id, reason, ctx.user.id)
             await ctx.send(f"🚫 {member.mention} has been warned for: {reason}")
 
@@ -37,7 +37,7 @@ class ModerationCommands(commands.Cog):
 
     @mute.subcommand(name="add", description="Mute a user for a specific duration.")
     async def mute_add(self, ctx: nextcord.Interaction, member: nextcord.Member, duration: int):
-        if ctx.user.id not in self.admins:
+        if ctx.user.id not in self.admins and not ctx.user.guild_permissions.moderate_members:
             await ctx.response.send_message("You do not have permission to mute members!", ephemeral=True)
             return
 
@@ -52,7 +52,7 @@ class ModerationCommands(commands.Cog):
 
     @mute.subcommand(name="remove", description="Remove a mute from a user.")
     async def mute_remove(self, ctx: nextcord.Interaction, member: nextcord.Member):
-        if ctx.user.id not in self.admins:
+        if ctx.user.id not in self.admins and not ctx.user.guild_permissions.moderate_members:
             await ctx.response.send_message("You do not have permission to unmute members!", ephemeral=True)
             return
 
@@ -68,7 +68,7 @@ class ModerationCommands(commands.Cog):
 
     @mute.subcommand(name="change", description="Change a mute duration of a user.")
     async def mute_change(self, ctx: nextcord.Interaction, member: nextcord.Member, new_duration: int):
-        if ctx.user.id not in self.admins:
+        if ctx.user.id not in self.admins and not ctx.user.guild_permissions.moderate_members:
             await ctx.response.send_message("You do not have permission to mute members!", ephemeral=True)
             return
 
@@ -93,7 +93,7 @@ class ModerationCommands(commands.Cog):
 
     @mute.subcommand(name="extend", description="Extend a mute duration of a user.")
     async def mute_extend(self, ctx: nextcord.Interaction, member: nextcord.Member, new_duration: int):
-        if ctx.user.id not in self.admins:
+        if ctx.user.id not in self.admins and not ctx.user.guild_permissions.moderate_members:
             await ctx.response.send_message("You do not have permission to mute members!", ephemeral=True)
             return
 
