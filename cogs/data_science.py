@@ -69,5 +69,5 @@ class DataScience(commands.Cog):
             itemset = df["itemsets"].loc[ranking]
             await ctx.response.send_message(f"Ranking {ranking}: {", ".join(list(itemset))}")
 
-        except IndexError:
+        except KeyError:
             await ctx.response.send_message("Undefined index", ephemeral=True)
