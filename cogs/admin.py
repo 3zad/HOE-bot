@@ -34,7 +34,7 @@ class AdminCommands(commands.Cog):
         await ctx.response.send_message("Converting is complete", ephemeral=True)
 
     @nextcord.slash_command(name="process", description="(Admin command) Process data.")
-    async def process(self, ctx, min_support: float):
+    async def process(self, ctx, min_support_ids: float, min_support_no_ids: float):
         if ctx.user.id not in self.admins:
             await ctx.response.send_message("Admins only", ephemeral=True)
         
@@ -42,10 +42,10 @@ class AdminCommands(commands.Cog):
         status_message = await ctx.followup.send("Starting processing with IDs...")
 
         csv = CSVUtils()
-        await csv.process_data(min_support=0.0012)
+        await csv.process_data(min_support=min_support_ids)
 
         await status_message.edit(content=f"Starting processing without IDs...")
-        await csv.process_data_no_id(min_support=min_support)
+        await csv.process_data_no_id(min_support=min_support_no_ids)
 
         await status_message.edit(content=f"Complete!")
         await ctx.followup.send("Processing is complete", ephemeral=True)
