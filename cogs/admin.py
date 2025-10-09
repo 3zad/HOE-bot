@@ -2,6 +2,7 @@ import nextcord
 from nextcord.ext import commands
 import sys
 from db.MainDatabase import MainDatabase
+from bot_utils.csv_utils import CSVUtils
 
 class AdminCommands(commands.Cog):
     def __init__(self, bot, config):
@@ -24,16 +25,10 @@ class AdminCommands(commands.Cog):
         if ctx.user.id not in self.admins:
             await ctx.response.send_message("Admins only", ephemeral=True)
         
-        data = await self.db.to_CSV()
-        
         status_message = await ctx.channel.send("Starting CSV dump...")
 
-
-        with open("data.csv", 'w', encoding="UTF-8") as f:
-            f.write(f"user_id,channel_id,message_content\n")
-            for row in data:
-                content: str = row[2].replace('\n', ' ').replace('\t', ' ').replace('’', '').replace(',', ' ').replace("'", '').lower()
-                f.write(f"{row[0]},{row[1]},{content}\n")
+        csv = CSVUtils()
+        await csv.toCSV()
 
         await status_message.edit(content=f"Complete!")
         await ctx.response.send_message("Converting is complete", ephemeral=True)
