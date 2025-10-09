@@ -12,6 +12,7 @@ class Routines(commands.Cog):
         self.config = config
 
         self.reminder_task.start()
+        self.csv_task.start()
 
     @tasks.loop(seconds=5)
     async def reminder_task(self):
@@ -33,10 +34,11 @@ class Routines(commands.Cog):
     async def csv_task(self):
         start = datetime.time(2,0,0)
         end = datetime.time(2,5,0)
-        if start < datetime.datetime.now() < end:
+        
+        if start < datetime.datetime.now().time() < end:
             print("Converting CSV!")
             csv = CSVUtils()
-            csv.toCSV()
+            await csv.to_csv()
 
     @csv_task.before_loop
     async def before_csv_task(self):

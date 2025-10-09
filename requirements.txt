@@ -6,3 +6,4 @@ textstat
 matplotlib
 pandas
 numpy
+mlxtend

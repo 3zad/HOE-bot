@@ -28,7 +28,21 @@ class AdminCommands(commands.Cog):
         status_message = await ctx.channel.send("Starting CSV dump...")
 
         csv = CSVUtils()
-        await csv.toCSV()
+        await csv.to_csv()
 
         await status_message.edit(content=f"Complete!")
         await ctx.response.send_message("Converting is complete", ephemeral=True)
+
+    @nextcord.slash_command(name="process", description="(Admin command) Process data.")
+    async def process(self, ctx, min_support: float):
+        if ctx.user.id not in self.admins:
+            await ctx.response.send_message("Admins only", ephemeral=True)
+        
+        await ctx.response.defer()
+        status_message = await ctx.followup.send("Starting processing...")
+
+        csv = CSVUtils()
+        await csv.process_data(min_support=min_support)
+
+        await status_message.edit(content=f"Complete!")
+        await ctx.followup.send("Processing is complete", ephemeral=True)
