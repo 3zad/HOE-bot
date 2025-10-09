@@ -51,7 +51,23 @@ class DataScience(commands.Cog):
             )
             results_list.append(result_line)
 
+        if results_list == []:
+            await ctx.response.send_message("No results.", ephemeral=True)
+            return
+
         results_text = "\n".join(results_list)
         embed.add_field(name="\u200b", value=results_text, inline=False) 
 
         await ctx.send(embed=embed)
+
+
+    @science.subcommand(name="ranking", description="Look up a ranking")
+    async def science_ranking(self, ctx: nextcord.Interaction, ranking: int):
+        df = await CSVUtils.load_frequent_itemsets()
+
+        try:
+            itemset = df["itemsets"].loc[ranking]
+            await ctx.response.send_message(f"Ranking {ranking}: {", ".join(list(itemset))}")
+
+        except IndexError:
+            await ctx.response.send_message("Undefined index", ephemeral=True)

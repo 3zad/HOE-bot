@@ -99,7 +99,6 @@ class Listeners(commands.Cog):
                 if not self.language.is_gibberish(message.content):
                     reading_level = self.language.reading_level(message.content)
                     dale_chall = self.language.dale_chall(message.content)
-                    print("Not gibberish")
             except:
                 pass
 
