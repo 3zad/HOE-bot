@@ -5,7 +5,7 @@ from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import fpgrowth
 from nltk.corpus import stopwords
 import nltk
-import ast
+from collections import Counter
 
 class CSVUtils:
     def __init__(self):
@@ -51,7 +51,7 @@ class CSVUtils:
             .tolist()
         )
 
-        transactions = [t for t in transactions if t]
+        transactions = self.__preprocess_transactions__([t for t in transactions if t], min_support)
 
         te = TransactionEncoder()
         te_ary = te.fit(transactions).transform(transactions)
@@ -76,7 +76,7 @@ class CSVUtils:
             .tolist()
         )
 
-        transactions = [t for t in transactions if t]
+        transactions = self.__preprocess_transactions__([t for t in transactions if t], min_support)
 
         te = TransactionEncoder()
         te_ary = te.fit(transactions).transform(transactions)
@@ -88,6 +88,17 @@ class CSVUtils:
         freq_itemsets.to_csv("pure_frequent_itemsets.csv", index=False)
 
 
+    def __preprocess_transactions__(self, transactions, min_support):
+        min_count = int(min_support * len(transactions))
+        if min_count < 2:
+            min_count = 2
+        item_counts = Counter(item for transaction in transactions for item in transaction)
+        frequent_items = {item for item, count in item_counts.items() if count >= min_count}
+        filtered_transactions = [
+            [item for item in t if item in frequent_items] 
+            for t in transactions
+        ]
+        return [t for t in filtered_transactions if t]
 
     def __preprocess_message__(self, text):
         # Remove Discord custom emojis
