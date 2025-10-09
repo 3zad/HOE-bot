@@ -19,13 +19,12 @@ class CSVUtils:
         self.ENGLISH_STOP_WORDS = set(stopwords.words('english'))
 
     @staticmethod
-    async def load_frequent_itemsets(filename="frequent_itemsets.csv"):
+    async def load_csv(filename) -> pd.DataFrame:
         df = pd.read_csv(filename)
         
         df['itemsets'] = df['itemsets'].apply(lambda x: eval(x, {"frozenset": frozenset, "__builtins__": {}}) 
                                               if isinstance(x, str) and x.startswith("frozenset(") 
                                               else x)
-        
         return df
 
     async def to_csv(self) -> None:

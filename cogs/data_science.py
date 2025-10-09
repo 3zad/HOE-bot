@@ -20,8 +20,16 @@ class DataScience(commands.Cog):
             return
 
     @science.subcommand(name="lookup", description="Look up a word/user ID or set of words/user IDs")
-    async def science_lookup(self, ctx: nextcord.Interaction, target):
-        df = await CSVUtils.load_frequent_itemsets()
+    async def science_lookup(self, ctx: nextcord.Interaction, target: str, dataset: int):
+        if dataset != 0 and dataset != 1:
+            await ctx.response.send_message("```Input\tDataset\n0 -> Dataset with user IDs\n1 -> Dataset without user IDs```", ephemeral=True)
+            return
+        
+        df = None
+        if dataset == 0:
+            df = await CSVUtils.load_csv("frequent_itemsets.csv")
+        elif dataset == 1:
+            df = await CSVUtils.load_csv("pure_frequent_itemsets.csv")
 
         word_mask = df['itemsets'].apply(lambda itemset: target in itemset)
         word_associations = df[word_mask].sort_values(by='support', ascending=False)
@@ -62,8 +70,16 @@ class DataScience(commands.Cog):
 
 
     @science.subcommand(name="ranking", description="Look up a ranking")
-    async def science_ranking(self, ctx: nextcord.Interaction, ranking: int):
-        df = await CSVUtils.load_frequent_itemsets()
+    async def science_ranking(self, ctx: nextcord.Interaction, ranking: int, dataset: int):
+        if dataset != 0 and dataset != 1:
+            await ctx.response.send_message("```Input\tDataset\n0 -> Dataset with user IDs\n1 -> Dataset without user IDs```", ephemeral=True)
+            return
+        
+        df = None
+        if dataset == 0:
+            df = await CSVUtils.load_csv("frequent_itemsets.csv")
+        elif dataset == 1:
+            df = await CSVUtils.load_csv("pure_frequent_itemsets.csv")
 
         try:
             itemset = df["itemsets"].loc[ranking]
