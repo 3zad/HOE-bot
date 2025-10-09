@@ -196,6 +196,13 @@ class MainDatabase:
             await db.commit()
 
     # --- Get --- #
+    async def get_warning_rankings(self):
+        """Get top 5 people with the most warnings."""
+        async with aiosqlite.connect(self.db_name) as db:
+            cursor = await db.execute('SELECT user_id, COUNT(user_id) AS warning_count FROM warnings GROUP BY user_id ORDER BY warning_count DESC LIMIT 5')
+            row = await cursor.fetchall()
+            return row
+        
     async def get_message_sums(self, user):
         """Retrieve word data for a specific user."""
         async with aiosqlite.connect(self.db_name) as db:

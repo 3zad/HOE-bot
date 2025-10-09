@@ -248,6 +248,37 @@ class GeneralCommands(commands.Cog):
 
         await ctx.response.send_message(f"✅ Reminder set for {date_obj}.")
 
+    @nextcord.slash_command(name="warnings", description="See top 5 people")
+    async def warnings(self, ctx: nextcord.Interaction):
+        if ctx.channel.id not in self.commands_channel:
+            await ctx.response.send_message("Please go to bot command channel!", ephemeral=True)
+            return
+        
+        ranking = await self.db.get_warning_rankings()
+        print(ranking)
+
+        embed=nextcord.Embed(
+                title=f"Users with the most warnings",
+                color=nextcord.colour.Colour.green()
+        )
+        embed.add_field(name="Number of warnings    User", value="", inline=False)
+
+        results_list = []
+        for rank in ranking:
+            result_line = (
+                f"{rank[1]} <@{rank[0]}>"
+            )
+            results_list.append(result_line)
+
+        if results_list == []:
+            await ctx.response.send_message("No results.", ephemeral=True)
+            return
+
+        results_text = "\n".join(results_list)
+        embed.add_field(name="\u200b", value=results_text, inline=False) 
+
+        await ctx.send(embed=embed)
+
    
     async def cog_unload(self):
         await self.db.close()
