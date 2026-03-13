@@ -1,6 +1,5 @@
 import nextcord
 from nextcord.ext import commands
-from langdetect import detect
 from bot_utils.language import Language
 
 class Listeners(commands.Cog):
@@ -10,7 +9,7 @@ class Listeners(commands.Cog):
         self.config = config
         self.language = Language()
 
-        self.star_channel = self.config["star_channel"]
+        self.star_channel = self.config.config["star_channel"]
 
     async def star_embed(self, guild_id, channel_id, message_id, message, member):
         user = await self.bot.fetch_user(member)

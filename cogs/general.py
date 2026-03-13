@@ -1,10 +1,9 @@
 import nextcord
 from nextcord.ext import commands
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import datetime
-import pandas as pd
 import io
+from cogs.__checks import bot_channel_only
 
 class GeneralCommands(commands.Cog):
     def __init__(self, bot, config, db):
@@ -12,9 +11,9 @@ class GeneralCommands(commands.Cog):
         self.db = db
         self.config = config
 
-        self.star_channel: int = self.config["star_channel"]
+        self.star_channel: int = self.config.config["star_channel"]
 
-        self.commands_channel: list = self.config["commands_channel"]
+        self.commands_channel: list = self.config.config["commands_channel"]
 
     @nextcord.slash_command(name="count", description="Various count commands.")
     async def count(self, ctx: nextcord.Interaction):
@@ -33,12 +32,6 @@ class GeneralCommands(commands.Cog):
     @count.subcommand(name="servercurse", description="Gives information on the number of curse words for the server.")
     async def server_curse_count(self, ctx):
         await ctx.send(f"Not implemented.")
-
-    @nextcord.slash_command(name="reading", description="Manage muting users.")
-    async def reading(self, ctx: nextcord.Interaction):
-        if ctx.channel.id not in self.commands_channel:
-            await ctx.response.send_message("Please go to bot command channel!", ephemeral=True)
-            return
 
     @nextcord.slash_command(name="message_times", description="Outputs a graph with the number of messages during different times of the day.")
     async def message_times(self, ctx):

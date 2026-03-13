@@ -4,10 +4,9 @@ from cogs.admin import AdminCommands
 from cogs.moderation import ModerationCommands
 from cogs.listeners import Listeners
 from cogs.database_commands import DbCommands
-from cogs.data_science import DataScience
 from cogs.routines import Routines
 from db.MainDatabase import MainDatabase
-import json
+from config import Config
 
 intents = nextcord.Intents.all()
 intents.message_content = True
@@ -18,9 +17,8 @@ intents.members = True
 
 client = nextcord.ext.commands.Bot(command_prefix="owurghoerubheoruihoeb", intents=intents)
 
-with open("config.json", 'r', encoding="UTF-8") as f:
-    config = json.load(f)
 
+config = Config()
 db = MainDatabase()
 
 client.add_cog(GeneralCommands(client, config, db))
@@ -29,7 +27,6 @@ client.add_cog(Routines(client, config, db))
 client.add_cog(DbCommands(client, config, db))
 client.add_cog(ModerationCommands(client, config, db))
 client.add_cog(AdminCommands(client, config, db))
-client.add_cog(DataScience(client, config, db))
 
 
 client.run(open("token.txt", 'r').readline().replace("\n", ""))

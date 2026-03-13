@@ -1,7 +1,6 @@
 from nextcord.ext import commands
 from nextcord.ext import commands, tasks
 import datetime
-from bot_utils.csv_utils import CSVUtils
 
 class Routines(commands.Cog):
     def __init__(self, bot, config, db):
@@ -10,7 +9,6 @@ class Routines(commands.Cog):
         self.config = config
 
         self.reminder_task.start()
-        self.csv_task.start()
 
     @tasks.loop(seconds=5)
     async def reminder_task(self):
@@ -27,21 +25,4 @@ class Routines(commands.Cog):
     @reminder_task.before_loop
     async def before_reminder_task(self):
         await self.bot.wait_until_ready()
-
-    @tasks.loop(seconds=300)
-    async def csv_task(self):
-        start = datetime.time(2,0,0)
-        end = datetime.time(2,5,0)
-        
-        if start < datetime.datetime.now().time() < end:
-            print("Converting CSV!")
-            csv = CSVUtils()
-            await csv.to_csv()
-
-    @csv_task.before_loop
-    async def before_csv_task(self):
-        await self.bot.wait_until_ready()
-
-    async def cog_unload(self):
-        await self.db.close()
 

@@ -45,9 +45,3 @@ class Language:
         for char in text:
             summa += len(self.emoji_pattern.findall(char))
         return summa
-
-    def reading_level(self, text):
-        return textstat.flesch_kincaid_grade(text)
-
-    def dale_chall(self, text):
-        return textstat.dale_chall_readability_score(text)
