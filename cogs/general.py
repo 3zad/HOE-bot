@@ -13,31 +13,31 @@ class GeneralCommands(commands.Cog):
 
         self.star_channel: int = self.config.config["star_channel"]
 
-        self.commands_channel: list = self.config.config["commands_channel"]
+        self.bot_channels: list = self.config.config["bot_channels"]
 
     @nextcord.slash_command(name="count", description="Various count commands.")
+    @bot_channel_only()
     async def count(self, ctx: nextcord.Interaction):
-        if ctx.channel.id not in self.commands_channel:
-            await ctx.response.send_message("Please go to bot command channel!", ephemeral=True)
-            return
+        pass
 
     @count.subcommand(name="word", description="Gives information on the number of words from a user.")
+    @bot_channel_only()
     async def word_count(self, ctx, member):
         await ctx.send(f"Not implemented.")
 
     @count.subcommand(name="curse", description="Gives information on the number of curse words from a user.")
+    @bot_channel_only()
     async def curse_count(self, ctx, member):
         await ctx.send(f"Not implemented.")
 
     @count.subcommand(name="servercurse", description="Gives information on the number of curse words for the server.")
+    @bot_channel_only()
     async def server_curse_count(self, ctx):
         await ctx.send(f"Not implemented.")
 
     @nextcord.slash_command(name="message_times", description="Outputs a graph with the number of messages during different times of the day.")
+    @bot_channel_only()
     async def message_times(self, ctx):
-        if ctx.channel.id not in self.commands_channel:
-            await ctx.response.send_message("Please go to bot command channel!", ephemeral=True)
-            return
         data = await self.db.get_message_time_counts()
         hours = [int(row[0]) for row in data]
         message_counts = [row[1]/row[2] for row in data]
@@ -61,11 +61,8 @@ class GeneralCommands(commands.Cog):
         await ctx.send(file=nextcord.File(buf, "messages_per_hour.png"))
 
     @nextcord.slash_command(name="reminder", description="DAY-MONTH-YEAR HOUR:MINUTE:SECOND gives a reminder after a period of time.")
+    @bot_channel_only()
     async def reminder(self, ctx: nextcord.Interaction, reminder, year_month_day, hour_minute_second):
-        if ctx.channel.id not in self.commands_channel:
-            await ctx.response.send_message("Please go to bot command channel!", ephemeral=True)
-            return
-        
         date_format = "%Y-%m-%d %H:%M:%S"
         date_str = f"{year_month_day} {hour_minute_second}"
         
@@ -89,11 +86,8 @@ class GeneralCommands(commands.Cog):
         await ctx.response.send_message(f"✅ Reminder set for {date_obj}.")
 
     @nextcord.slash_command(name="warnings", description="See top 5 people")
-    async def warnings(self, ctx: nextcord.Interaction):
-        if ctx.channel.id not in self.commands_channel:
-            await ctx.response.send_message("Please go to bot command channel!", ephemeral=True)
-            return
-        
+    @bot_channel_only()
+    async def warnings(self, ctx: nextcord.Interaction):        
         ranking = await self.db.get_warning_rankings()
         print(ranking)
 

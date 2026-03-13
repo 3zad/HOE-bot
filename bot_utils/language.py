@@ -1,47 +1,145 @@
-import textstat
-import nltk
-from nltk.corpus import words
 import re
 
 class Language:
-    def __init__(self):
-        nltk.download("words")
-        self.word_set = set(words.words())
-        
-        self.curse_words = []
-        with open("bot_utils/resources/curse_words.txt", 'r', encoding="UTF-8") as f:
-            for line in f:
-                line = line.strip("\t").strip("\n")
-                self.curse_words.append(line)
+    # Character map for leetspeak or common substitutions
+    LEETSPEAK_MAP = {
+        'a': '[a@4]',
+        'b': '[b8]',
+        'c': '[c(<{]',
+        'e': '[e3]',
+        'g': '[g69]',
+        'i': '[i1!|l]',
+        'l': '[l1|]',
+        'o': '[o0]',
+        's': '[s5$]',
+        't': '[t7+]',
+        'z': '[z2]'
+    }
 
-        self.emoji_pattern = re.compile(
-            "[\U0001F600-\U0001F64F"  # emoticons
-            "\U0001F300-\U0001F5FF"  # symbols & pictographs
-            "\U0001F680-\U0001F6FF"  # transport & map symbols
-            "\U0001F700-\U0001F77F"  # alchemical symbols
-            "\U0001F780-\U0001F7FF"  # Geometric Shapes Extended
-            "\U0001F800-\U0001F8FF"  # Supplemental Arrows-C
-            "\U0001F900-\U0001F9FF"  # Supplemental Symbols and Pictographs
-            "\U0001FA00-\U0001FA6F"  # Chess symbols and other
-            "\U0001FA70-\U0001FAFF"  # Symbols for culture & education
-            "\U00002702-\U000027B0"  # Dingbats
-            "\U000024C2-\U0001F251"  # Enclosed characters
-            "]+", flags=re.UNICODE)
-    
-    def is_gibberish(self, text):
-        words_in_text = text.split()
-        valid_words = sum(1 for word in words_in_text if word.lower() in self.word_set)
+    # Whitelist to prevent Scunthorpe problem (false positives)
+    WHITELIST = {
+        'snigger', 'raccoon', 'tycoon', 'cocoon', 'buffoon', 'analytics', 'bass', 'class', 'pass'
+    }
+
+    def __init__(self):
+        self.curse_patterns = []
+        with open("bot_utils/resources/curse_words.txt", "r", encoding="utf-8") as f:
+            raw_words = [line.strip() for line in f.readlines()]
+            for word in raw_words:
+                if not word: continue
+                # Generate regex for each word
+                pattern_str = self.get_regex_for_word(word)
+                self.curse_patterns.append(re.compile(pattern_str, re.IGNORECASE))
+
+        self.really_bad_patterns = []
+        with open("bot_utils/resources/really_bad_curse_words.txt", "r", encoding="utf-8") as f:
+            raw_words = [line.strip() for line in f.readlines()]
+            for word in raw_words:
+                if not word: continue
+                # Generate regex for each word
+                pattern_str = self.get_regex_for_word(word)
+                self.really_bad_patterns.append(re.compile(pattern_str, re.IGNORECASE))
+
+    @staticmethod
+    def is_english(text):
+        pattern = r'^[a-zA-Z0-9\s\.,!@#$%^&*()_+-=\[\]{};:\'"<>/?\\|`~]*$'
+        return bool(re.match(pattern, text))
+
+    def get_regex_for_word(self, word: str) -> str:
+        """
+        Generates a regex pattern for a given word that allows for:
+        - Leetspeak substitutions
+        - Separators (dots, spaces, hyphens, etc.) between characters
+        """
+        pattern = ""
+        for i, char in enumerate(word):
+            # Get the regex for the character (or the character itself if no map)
+            char_pattern = self.LEETSPEAK_MAP.get(char.lower(), re.escape(char))
+            pattern += char_pattern
+            
+            # Allow for separators between characters, but not after the last one
+            if i < len(word) - 1:
+                # Allow any non-alphanumeric character as a separator, or spaces
+                pattern += r'[\W_]*'
         
-        return valid_words / max(len(words_in_text), 1) < 0.5
-    
-    def num_curses(self, text):
-        summa = 0
-        for word in self.curse_words:
-            summa += text.lower().split().count(word.lower())
-        return summa
-    
-    def num_emojis(self, text):
-        summa = 0
-        for char in text:
-            summa += len(self.emoji_pattern.findall(char))
-        return summa
+        return pattern
+
+    def number_of_curse_words(self, text) -> int:
+        count = 0
+        for pattern in self.curse_patterns:
+            matches = pattern.findall(text)
+            for match in matches:
+                 if not self.is_whitelisted(match, text):
+                    count += 1
+        return count
+
+    def number_of_really_bad_curse_words(self, text) -> int:
+        # This count might be less accurate with regex, but we can try to find all matches
+        count = 0
+        for pattern in self.really_bad_patterns:
+            matches = pattern.findall(text)
+            for match in matches:
+                 if not self.is_whitelisted(match, text):
+                    count += 1
+        return count
+
+    def contains_curse_words(self, text) -> bool:
+        for pattern in self.curse_patterns:
+            if pattern.search(text):
+                return True
+        return False
+
+    def contains_really_bad_language(self, text) -> bool:
+        for pattern in self.really_bad_patterns:
+            # Search for the pattern in the text
+            for match in pattern.finditer(text):
+                matched_text = match.group()
+                if not self.is_whitelisted(matched_text, text):
+                    return True
+        return False
+        
+    def is_whitelisted(self, match_text: str, full_text: str) -> bool:
+        
+        lower_text = full_text.lower()
+        
+        for safe_word in self.WHITELIST:
+            if safe_word in lower_text:
+                pass
+        
+        is_clean_match = match_text.isalpha()
+        if is_clean_match:
+             pass
+        
+        return False
+
+    def contains_really_bad_language(self, text) -> bool:
+        for pattern in self.really_bad_patterns:
+            for match in pattern.finditer(text):
+                if not self._is_false_positive(match, text):
+                    return True
+        return False
+
+    def _is_false_positive(self, match, text) -> bool:
+        start, end = match.span()
+        
+        if start > 0 and text[start-1].isalpha():
+            full_word = self._get_surrounding_word(text, start, end)
+            if full_word.lower() in self.WHITELIST:
+                return True
+            return False
+            
+        if end < len(text) and text[end].isalpha():
+             full_word = self._get_surrounding_word(text, start, end)
+             if full_word.lower() in self.WHITELIST:
+                 return True
+             return False
+        return False
+
+    def _get_surrounding_word(self, text, start, end):
+        # Expand left
+        while start > 0 and text[start-1].isalpha():
+            start -= 1
+        # Expand right
+        while end < len(text) and text[end].isalpha():
+            end += 1
+        return text[start:end]
