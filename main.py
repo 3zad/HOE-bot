@@ -6,6 +6,7 @@ from cogs.listeners import Listeners
 from cogs.database_commands import DbCommands
 from cogs.data_science import DataScience
 from cogs.routines import Routines
+from db.MainDatabase import MainDatabase
 import json
 
 intents = nextcord.Intents.all()
@@ -20,16 +21,15 @@ client = nextcord.ext.commands.Bot(command_prefix="owurghoerubheoruihoeb", inten
 with open("config.json", 'r', encoding="UTF-8") as f:
     config = json.load(f)
 
-client.add_cog(GeneralCommands(client, config))
-client.add_cog(Listeners(client, config))
-client.add_cog(Routines(client, config))
-client.add_cog(DbCommands(client, config))
-client.add_cog(ModerationCommands(client, config))
-client.add_cog(AdminCommands(client, config))
-client.add_cog(DataScience(client, config))
+db = MainDatabase()
+
+client.add_cog(GeneralCommands(client, config, db))
+client.add_cog(Listeners(client, config, db))
+client.add_cog(Routines(client, config, db))
+client.add_cog(DbCommands(client, config, db))
+client.add_cog(ModerationCommands(client, config, db))
+client.add_cog(AdminCommands(client, config, db))
+client.add_cog(DataScience(client, config, db))
 
 
-if config["mode"] == "production":
-    client.run(open("token.txt", 'r').readline().replace("\n", ""))
-else:
-    client.run(open("token2.txt", 'r').readline().replace("\n", ""))
+client.run(open("token.txt", 'r').readline().replace("\n", ""))

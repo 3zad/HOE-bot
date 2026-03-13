@@ -1,14 +1,13 @@
 import nextcord
 from nextcord.ext import commands
 import sys
-from db.MainDatabase import MainDatabase
 from bot_utils.csv_utils import CSVUtils
 
 class AdminCommands(commands.Cog):
-    def __init__(self, bot, config):
+    def __init__(self, bot, config, db):
         self.bot = bot
-        self.db = MainDatabase()
-        
+        self.db = db
+
         self.config = config
         self.admins = config["owners"]
 

@@ -1,20 +1,16 @@
 import nextcord
 from nextcord.ext import commands
 from langdetect import detect
-from db.MainDatabase import MainDatabase
 from bot_utils.language import Language
 
 class Listeners(commands.Cog):
-    def __init__(self, bot, config):
+    def __init__(self, bot, config, db):
         self.bot = bot
-        self.db = MainDatabase()
+        self.db = db
         self.config = config
         self.language = Language()
 
-        if config["mode"] == "production":
-            self.star_channel = self.config["star_channel"]
-        else:
-            self.star_channel = self.config["star_channel_testing"]
+        self.star_channel = self.config["star_channel"]
 
     async def star_embed(self, guild_id, channel_id, message_id, message, member):
         user = await self.bot.fetch_user(member)
@@ -72,37 +68,13 @@ class Listeners(commands.Cog):
     async def on_message(self, message: nextcord.Message):
         if message.author.bot:
             return
-
-        # Basic message statistics
+        
         num_words = len(message.content.split())
-        num_exclamations = message.content.count("!")
-        num_questions = message.content.count("?")
-        num_periods = message.content.count(".")
-
-        num_emojis = self.language.num_emojis(message.content)
-        num_curse_words = self.language.num_curses(message.content)
 
         if num_words == 0:
             return
 
-        lang = None
-        reading_level = None
-        dale_chall = None
-
-        if num_words >= 3:
-            try:
-                lang = detect(message.content)
-            except:
-                pass
-            
-            try:
-                if not self.language.is_gibberish(message.content):
-                    reading_level = self.language.reading_level(message.content)
-                    dale_chall = self.language.dale_chall(message.content)
-            except:
-                pass
-
-        await self.db.add_message(message.author.id, num_words, num_curse_words, num_questions, num_periods, num_exclamations, num_emojis, lang, reading_level, dale_chall, message.channel.id, message.id, message.content)
+        await self.db.add_message(message.author.id, message.channel.id, message.id, message.content)
 
         print(f"Processed message from {message.author}: {message.content}")
 

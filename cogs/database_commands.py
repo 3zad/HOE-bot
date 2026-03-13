@@ -1,12 +1,11 @@
 import nextcord
 from nextcord.ext import commands
-from db.MainDatabase import MainDatabase
 
 class DbCommands(commands.Cog):
-    def __init__(self, bot, config):
+    def __init__(self, bot, config, db):
         self.bot = bot
-        self.db = MainDatabase()
-        
+        self.db = db
+
         self.config = config
         self.admins = config["owners"]
 
@@ -31,3 +30,9 @@ class DbCommands(commands.Cog):
                 await ctx.send("Done.")
             else:
                 await ctx.send(message)
+
+    @nextcord.slash_command(name="migrate", description="(Bot dev command) Migrate the database.")
+    async def migrate(self, ctx):
+        if ctx.user.id == 740986064314826822:
+            await self.db.migrate()
+            await ctx.send("Migration complete.")

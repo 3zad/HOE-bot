@@ -1,14 +1,12 @@
-import nextcord
 from nextcord.ext import commands
-from db.MainDatabase import MainDatabase
 from nextcord.ext import commands, tasks
 import datetime
 from bot_utils.csv_utils import CSVUtils
 
 class Routines(commands.Cog):
-    def __init__(self, bot, config):
+    def __init__(self, bot, config, db):
         self.bot = bot
-        self.db = MainDatabase()
+        self.db = db
         self.config = config
 
         self.reminder_task.start()

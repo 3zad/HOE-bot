@@ -29,15 +29,6 @@ class MainDatabase:
                 CREATE TABLE IF NOT EXISTS messages (
                 id INTEGER PRIMARY KEY,
                 user_id INTEGER,
-                number_of_words INTEGER,
-                number_of_curse_words INTEGER,
-                number_of_question_marks INTEGER,
-                number_of_periods INTEGER,
-                number_of_exclaimation_marks INTEGER,
-                number_of_emojis INTEGER,
-                language TEXT,
-                reading_level REAL,
-                dale_chall REAL,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 channel_id INTEGER,
                 message_id INTEGER,
@@ -166,12 +157,12 @@ class MainDatabase:
     # -------------- User Statistics -------------- #
 
     # --- Set --- #
-    async def add_message(self, user, word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall, channel_id, message_id, message_content):
+    async def add_message(self, user, channel_id, message_id, message_content):
         async with aiosqlite.connect(self.db_name) as db:
             await db.execute('''
-                INSERT INTO messages (user_id, number_of_words, number_of_curse_words, number_of_question_marks, number_of_periods, number_of_exclaimation_marks, number_of_emojis, language, reading_level, dale_chall, channel_id, message_id, message_content)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (str(user), word_count, curse_count, question_count, period_count, exclaimation_count, emoji_count, language, reading_level, dale_chall, channel_id, message_id, message_content))
+                INSERT INTO messages (user_id, channel_id, message_id, message_content)
+                VALUES (?, ?, ?, ?)
+            ''', (str(user), channel_id, message_id, message_content))
             await db.commit()
 
     async def set_reaction(self, message_id, user_sent, user_recieved, reaction, is_add):
@@ -202,54 +193,7 @@ class MainDatabase:
             cursor = await db.execute('SELECT user_id, COUNT(user_id) AS warning_count FROM warnings GROUP BY user_id ORDER BY warning_count DESC LIMIT 5')
             row = await cursor.fetchall()
             return row
-        
-    async def get_message_sums(self, user):
-        """Retrieve word data for a specific user."""
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT COUNT(*), SUM(number_of_words), SUM(number_of_curse_words), SUM(number_of_question_marks), SUM(number_of_periods), SUM(number_of_exclaimation_marks), SUM(number_of_emojis) FROM messages WHERE user_id = ?', (str(user),))
-            row = await cursor.fetchone()
-            return row
-        
-    async def get_reading_level_sums(self, user):
-        """Retrieve word data for a specific user."""
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT AVG(reading_level), AVG(dale_chall) FROM messages WHERE user_id = ?', (str(user),))
-            row = await cursor.fetchone()
-            return row
-        
-    async def get_reading_level_sums_of_server(self):
-        """Retrieve word data globally."""
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT AVG(reading_level), AVG(dale_chall) FROM messages')
-            row = await cursor.fetchone()
-            return row
-        
-    async def get_highest_reading_level(self):
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT user_id, AVG(reading_level) as keskmine FROM messages group by user_id order by keskmine desc')
-            row = await cursor.fetchone()
-            return row
-        
-    async def get_lowest_reading_level(self):
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT user_id, AVG(reading_level) as keskmine FROM messages group by user_id order by keskmine asc')
-            row = await cursor.fetchone()
-            return row
-        
-    async def get_message_sums_of_server(self):
-        """Retrieve word data for a specific user."""
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT COUNT(*), SUM(number_of_words), SUM(number_of_curse_words), SUM(number_of_question_marks), SUM(number_of_periods), SUM(number_of_exclaimation_marks), SUM(number_of_emojis) FROM messages')
-            row = await cursor.fetchone()
-            return row
-
-    async def get_language(self, user):
-        """Retrieve language data for a specific user."""
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute('SELECT language FROM messages WHERE user_id = ?', (str(user),))
-            row = await cursor.fetchall()
-            return row
-        
+    
     async def is_starred_enough(self, message_id):
         async with aiosqlite.connect(self.db_name) as db:
             cursor = await db.execute('''SELECT COUNT(*) FROM reactions WHERE message_id = ? AND reaction_emoji = '⭐' AND add_or_remove='add';''', (str(message_id),))
@@ -285,29 +229,6 @@ class MainDatabase:
             output = await cursor.fetchall()
             return output
         
-    async def get_reading_level_and_times(self, user_id):
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute("""
-            SELECT created_at, reading_level
-            FROM messages
-            WHERE user_id = ?
-            AND reading_level IS NOT NULL
-            ORDER BY created_at;
-            """, (str(user_id),))
-            output = await cursor.fetchall()
-            return output
-        
-    async def get_reading_level_and_times_of_server(self):
-        async with aiosqlite.connect(self.db_name) as db:
-            cursor = await db.execute("""
-            SELECT created_at, reading_level
-            FROM messages
-            WHERE reading_level IS NOT NULL
-            ORDER BY created_at;
-            """)
-            output = await cursor.fetchall()
-            return output
-        
     # --- DB migration n shiet --- #    
     async def raw_sql(self, string):
         async with aiosqlite.connect(self.db_name) as db:
@@ -322,3 +243,16 @@ class MainDatabase:
                 await db.execute(string)
                 await db.commit()
                 return None
+            
+    async def migrate(self) -> None:
+        async with aiosqlite.connect(self.db_name) as db:
+            await db.execute("ALTER TABLE messages DROP COLUMN number_of_words;")
+            await db.execute("ALTER TABLE messages DROP COLUMN number_of_curse_words;")
+            await db.execute("ALTER TABLE messages DROP COLUMN number_of_question_marks;")
+            await db.execute("ALTER TABLE messages DROP COLUMN number_of_periods;")
+            await db.execute("ALTER TABLE messages DROP COLUMN number_of_exclaimation_marks;")
+            await db.execute("ALTER TABLE messages DROP COLUMN number_of_emojis;")
+            await db.execute("ALTER TABLE messages DROP COLUMN language;")
+            await db.execute("ALTER TABLE messages DROP COLUMN reading_level;")
+            await db.execute("ALTER TABLE messages DROP COLUMN dale_chall;")
+            await db.commit()

@@ -1,13 +1,12 @@
 import nextcord
 from nextcord.ext import commands
-from db.MainDatabase import MainDatabase
 import datetime
 
 class ModerationCommands(commands.Cog):
-    def __init__(self, bot, config):
+    def __init__(self, bot, config, db):
         self.bot = bot
-        self.db = MainDatabase()
-        
+        self.db = db
+
         self.config = config
         self.admins = config["owners"]
 

@@ -1,17 +1,14 @@
 import nextcord
 from nextcord.ext import commands
-import re
 from bot_utils.csv_utils import CSVUtils
 
 class DataScience(commands.Cog):
-    def __init__(self, bot, config):
+    def __init__(self, bot, config, db):
         self.bot = bot
         self.config = config
+        self.db = db
 
-        if config["mode"] == "production":
-            self.commands_channel: list = self.config["commands_channel"]
-        else:
-            self.commands_channel: list = self.config["commands_channel_testing"]
+        self.commands_channel: list = self.config["commands_channel"]
 
     @nextcord.slash_command(name="science", description="Various data science commands.")
     async def science(self, ctx: nextcord.Interaction):
