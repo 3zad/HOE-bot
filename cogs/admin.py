@@ -14,3 +14,9 @@ class AdminCommands(commands.Cog):
     async def shutdown(self, ctx):
         await ctx.send("Shutting down!")
         sys.exit(0)
+
+    @nextcord.slash_command(name="generate_leaderboard", description="(Admin command) Generate leaderboard.")
+    @admin_only()
+    async def generate_leaderboard(self, ctx):
+        await self.db.generate_leaderboard()
+        await ctx.response.send_message("Leaderboard generated.", ephemeral=True)

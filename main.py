@@ -7,6 +7,7 @@ from cogs.database_commands import DbCommands
 from cogs.routines import Routines
 from db.MainDatabase import MainDatabase
 from config import Config
+from bot_utils.language import Language
 
 intents = nextcord.Intents.all()
 intents.message_content = True
@@ -19,7 +20,8 @@ client = nextcord.ext.commands.Bot(command_prefix="owurghoerubheoruihoeb", inten
 
 
 config = Config()
-db = MainDatabase()
+language = Language()
+db = MainDatabase(config, language)
 
 client.add_cog(GeneralCommands(client, config, db))
 client.add_cog(Listeners(client, config, db))

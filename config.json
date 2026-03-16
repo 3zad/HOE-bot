@@ -8,5 +8,12 @@
     557543182787674132
   ],
   "bot_channels": [943064312644251711],
-  "star_channel": 1126112077635911700
+  "star_channel": 1126112077635911700,
+
+	"elo": {
+		"curse_multiplier": 10,
+		"slur_multiplier": 50,
+		"warning_multiplier": 50,
+		"spam_multiplier": 30
+	}
 }
